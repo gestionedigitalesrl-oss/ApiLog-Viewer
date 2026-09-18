@@ -4,9 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Log API & Veicoli</title>
+
+  <!-- Tailwind CSS & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Flatpickr (Calendario UI avanzato in Dark Theme) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10n/it.js"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8 font-sans">
 
@@ -61,7 +71,25 @@
         <input type="text" id="filter-search" placeholder="Cerca testo..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500">
       </div>
 
-      <div class="w-36">
+      <!-- Calendario Interattivo Flatpickr -->
+      <div class="w-52">
+        <div class="flex items-center justify-between mb-1">
+          <label class="block text-xs font-medium text-slate-400">Calendario</label>
+          <button id="btn-clear-date" type="button" class="text-[10px] text-blue-400 hover:underline">Azzera</button>
+        </div>
+        <div class="relative flex items-center">
+          <input 
+            type="text" 
+            id="filter-calendar" 
+            placeholder="Seleziona data..." 
+            readonly
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-sm text-slate-200 cursor-pointer focus:outline-none focus:border-blue-500"
+          >
+          <i data-lucide="calendar" class="w-4 h-4 text-slate-400 absolute left-2.5 pointer-events-none"></i>
+        </div>
+      </div>
+
+      <div class="w-32">
         <label class="block text-xs font-medium text-slate-400 mb-1">Livello</label>
         <select id="filter-level" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
           <option value="ALL">Tutti</option>
@@ -71,7 +99,7 @@
         </select>
       </div>
 
-      <div class="w-64">
+      <div class="w-56">
         <label class="block text-xs font-medium text-slate-400 mb-1">Tipo Evento</label>
         <select id="filter-event" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
           <option value="ALL">Tutti i tipi</option>
@@ -85,12 +113,13 @@
         </select>
       </div>
 
-      <div class="w-32">
-        <label class="block text-xs font-medium text-slate-400 mb-1">Limite righe</label>
+      <div class="w-28">
+        <label class="block text-xs font-medium text-slate-400 mb-1">Limite</label>
         <select id="filter-limit" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
           <option value="50">50</option>
           <option value="100" selected>100</option>
           <option value="200">200</option>
+          <option value="500">500</option>
         </select>
       </div>
     </div>
@@ -126,6 +155,20 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let logsCache = [];
+    let selectedCalendarDate = "";
+
+    // Inizializzazione Calendario Flatpickr
+    const calendarPicker = flatpickr("#filter-calendar", {
+      locale: "it",
+      dateFormat: "Y-m-d",
+      altInput: true,
+      altFormat: "j F Y",
+      allowInput: false,
+      onChange: function(selectedDates, dateStr) {
+        selectedCalendarDate = dateStr;
+        applyClientFilters();
+      }
+    });
 
     function isOneDayRecord(row) {
       if (row.event_type === "EXPIRY_WARNING_1D") return true;
@@ -141,6 +184,15 @@
       return d.toLocaleDateString("it-IT") + " " + d.toLocaleTimeString("it-IT", { hour12: false });
     }
 
+    function getLocalDateString(isoStr) {
+      if (!isoStr) return "";
+      const d = new Date(isoStr);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
     function renderBadgeLevel(level) {
       const colors = {
         INFO: "bg-blue-950 text-blue-400 border-blue-800",
@@ -152,7 +204,6 @@
       return `<span class="px-2 py-0.5 rounded border text-[10px] font-bold ${c}">${level}</span>`;
     }
 
-    // Solo il campo del badge dell'evento viene reso in rosso
     function renderBadgeEvent(evt, isWarning1D) {
       if (isWarning1D || evt === "EXPIRY_WARNING_1D") {
         return `<span class="px-2 py-0.5 rounded border text-[10px] font-medium font-sans bg-red-950/60 text-red-400 border-red-800/80">EXPIRY_WARNING_1D</span>`;
@@ -220,11 +271,13 @@
           matchesEvent = (item.event_type === filterEvent);
         }
 
+        const matchesDate = !selectedCalendarDate || (getLocalDateString(item.log_time) === selectedCalendarDate);
+
         const matchesSearch = !searchTerm || 
           (item.message && item.message.toLowerCase().includes(searchTerm)) ||
           (item.vehicle_model && item.vehicle_model.toLowerCase().includes(searchTerm));
 
-        return matchesLevel && matchesEvent && matchesSearch;
+        return matchesLevel && matchesEvent && matchesDate && matchesSearch;
       });
 
       renderTable(filtered);
@@ -256,12 +309,19 @@
       }).join("");
     }
 
+    // Event Listener
     document.getElementById("btn-refresh").addEventListener("click", fetchLogs);
     document.getElementById("filter-search").addEventListener("input", applyClientFilters);
+    document.getElementById("btn-clear-date").addEventListener("click", () => {
+      calendarPicker.clear();
+      selectedCalendarDate = "";
+      applyClientFilters();
+    });
     document.getElementById("filter-level").addEventListener("change", applyClientFilters);
     document.getElementById("filter-event").addEventListener("change", applyClientFilters);
     document.getElementById("filter-limit").addEventListener("change", fetchLogs);
 
+    // Avvio
     lucide.createIcons();
     fetchLogs();
   </script>
