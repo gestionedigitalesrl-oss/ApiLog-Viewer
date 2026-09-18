@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Log API & Veicoli</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8 font-sans">
+
+  <div class="max-w-7xl mx-auto space-y-6">
+    
+    <!-- Intestazione -->
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+          <i data-lucide="activity" class="text-blue-500"></i>
+          Monitor Log API & Flotta
+        </h1>
+        <p class="text-sm text-slate-400">Tabella di riferimento: <code class="text-blue-400">api_vehicle_logs</code></p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span id="sync-status" class="text-xs text-slate-400 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          Connesso
+        </span>
+        <button id="btn-refresh" class="bg-blue-600 hover:bg-blue-500 transition px-3.5 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          Aggiorna
+        </button>
+      </div>
+    </header>
+
+    <!-- Statistiche Rapide -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+        <p class="text-xs text-slate-400 font-medium">Totale Record Letti</p>
+        <p id="stat-total" class="text-2xl font-bold mt-1 text-white">0</p>
+      </div>
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+        <p class="text-xs text-slate-400 font-medium">Scadenza 1 Giorno</p>
+        <p id="stat-warning-1d" class="text-2xl font-bold mt-1 text-red-400">0</p>
+      </div>
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+        <p class="text-xs text-slate-400 font-medium">Expiry Reached</p>
+        <p id="stat-expiry" class="text-2xl font-bold mt-1 text-amber-400">0</p>
+      </div>
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+        <p class="text-xs text-slate-400 font-medium">Aggiornamenti Riusciti</p>
+        <p id="stat-success" class="text-2xl font-bold mt-1 text-emerald-400">0</p>
+      </div>
+    </div>
+
+    <!-- Barra Filtri -->
+    <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-4 flex flex-wrap gap-4 items-center">
+      <div class="flex-1 min-w-[200px]">
+        <label class="block text-xs font-medium text-slate-400 mb-1">Cerca nel messaggio</label>
+        <input type="text" id="filter-search" placeholder="Cerca testo..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+      </div>
+
+      <div class="w-36">
+        <label class="block text-xs font-medium text-slate-400 mb-1">Livello</label>
+        <select id="filter-level" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+          <option value="ALL">Tutti</option>
+          <option value="INFO">INFO</option>
+          <option value="WARNING">WARNING</option>
+          <option value="ERROR">ERROR</option>
+        </select>
+      </div>
+
+      <div class="w-64">
+        <label class="block text-xs font-medium text-slate-400 mb-1">Tipo Evento</label>
+        <select id="filter-event" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+          <option value="ALL">Tutti i tipi</option>
+          <option value="EXPIRY_WARNING_1D">EXPIRY_WARNING_1D (1 Giorno)</option>
+          <option value="EXPIRY_TRIGGER">Expiry Reached</option>
+          <option value="STATE_UPDATE_SUCCESS">STATE_UPDATE_SUCCESS</option>
+          <option value="SKIPPED_NO_ACTION">SKIPPED_NO_ACTION</option>
+          <option value="REALIGNMENT_REQUIRED">REALIGNMENT_REQUIRED</option>
+          <option value="JOB_START">JOB_START</option>
+          <option value="JOB_END">JOB_END</option>
+        </select>
+      </div>
+
+      <div class="w-32">
+        <label class="block text-xs font-medium text-slate-400 mb-1">Limite righe</label>
+        <select id="filter-limit" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+          <option value="50">50</option>
+          <option value="100" selected>100</option>
+          <option value="200">200</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tabella Log -->
+    <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm border-collapse">
+          <thead class="bg-slate-950 text-slate-400 uppercase text-[11px] font-semibold tracking-wider border-b border-slate-800">
+            <tr>
+              <th class="py-3 px-4">Timestamp</th>
+              <th class="py-3 px-4">Livello</th>
+              <th class="py-3 px-4">Tipo Evento</th>
+              <th class="py-3 px-4">Veicolo / ID</th>
+              <th class="py-3 px-4">Messaggio</th>
+            </tr>
+          </thead>
+          <tbody id="logs-tbody" class="divide-y divide-slate-800/60 font-mono text-xs">
+            <tr>
+              <td colspan="5" class="text-center py-8 text-slate-500">Caricamento log in corso...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://vcekmiomodmgwashgegx.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjZWttaW9tb2RtZ3dhc2hnZWd4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTcyMTIzOSwiZXhwIjoyMTA1Mjk3MjM5fQ.cBIBLXTQfBiGCYLap4EHHA3fUSCIfyeIzvXdKE6nCkM";
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let logsCache = [];
+
+    function isOneDayRecord(row) {
+      if (row.event_type === "EXPIRY_WARNING_1D") return true;
+      const msg = row.message || "";
+      const textMatch = /\b1\s*(gg|giorno|day)\b/i.test(msg);
+      const metaMatch = row.raw_metadata && (row.raw_metadata.days_elapsed === 1 || row.raw_metadata.days_elapsed === "1");
+      return Boolean(textMatch || metaMatch);
+    }
+
+    function formatDate(isoStr) {
+      if (!isoStr) return "-";
+      const d = new Date(isoStr);
+      return d.toLocaleDateString("it-IT") + " " + d.toLocaleTimeString("it-IT", { hour12: false });
+    }
+
+    function renderBadgeLevel(level) {
+      const colors = {
+        INFO: "bg-blue-950 text-blue-400 border-blue-800",
+        WARNING: "bg-amber-950 text-amber-400 border-amber-800",
+        ERROR: "bg-rose-950 text-rose-400 border-rose-800",
+        CRITICAL: "bg-red-950 text-red-300 border-red-700"
+      };
+      const c = colors[level] || "bg-slate-800 text-slate-300 border-slate-700";
+      return `<span class="px-2 py-0.5 rounded border text-[10px] font-bold ${c}">${level}</span>`;
+    }
+
+    // Solo il campo del badge dell'evento viene reso in rosso
+    function renderBadgeEvent(evt, isWarning1D) {
+      if (isWarning1D || evt === "EXPIRY_WARNING_1D") {
+        return `<span class="px-2 py-0.5 rounded border text-[10px] font-medium font-sans bg-red-950/60 text-red-400 border-red-800/80">EXPIRY_WARNING_1D</span>`;
+      }
+      if (evt === "EXPIRY_TRIGGER") {
+        return `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans bg-amber-500/10 text-amber-300 border-amber-500/20">Expiry Reached</span>`;
+      }
+
+      const colors = {
+        STATE_UPDATE_SUCCESS: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+        SKIPPED_NO_ACTION: "bg-slate-700/30 text-slate-400 border-slate-600/30",
+        REALIGNMENT_REQUIRED: "bg-purple-500/10 text-purple-300 border-purple-500/20"
+      };
+      const c = colors[evt] || "bg-slate-800 text-slate-400 border-slate-700";
+      return `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans ${c}">${evt}</span>`;
+    }
+
+    async function fetchLogs() {
+      const limit = parseInt(document.getElementById("filter-limit").value, 10);
+      const statusEl = document.getElementById("sync-status");
+      statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-spin"></span> Caricamento...`;
+
+      try {
+        let query = supabaseClient
+          .from("api_vehicle_logs")
+          .select("*")
+          .order("log_time", { ascending: false })
+          .limit(limit);
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        logsCache = data || [];
+        updateStats();
+        applyClientFilters();
+
+        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Aggiornato: ${new Date().toLocaleTimeString()}`;
+      } catch (err) {
+        console.error("Errore fetch:", err);
+        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> Errore sincronizzazione`;
+      }
+    }
+
+    function updateStats() {
+      document.getElementById("stat-total").innerText = logsCache.length;
+      document.getElementById("stat-warning-1d").innerText = logsCache.filter(l => isOneDayRecord(l)).length;
+      document.getElementById("stat-expiry").innerText = logsCache.filter(l => l.event_type === "EXPIRY_TRIGGER").length;
+      document.getElementById("stat-success").innerText = logsCache.filter(l => l.event_type === "STATE_UPDATE_SUCCESS").length;
+    }
+
+    function applyClientFilters() {
+      const filterLevel = document.getElementById("filter-level").value;
+      const filterEvent = document.getElementById("filter-event").value;
+      const searchTerm = document.getElementById("filter-search").value.toLowerCase();
+
+      const filtered = logsCache.filter(item => {
+        const matchesLevel = filterLevel === "ALL" || item.level === filterLevel;
+        
+        let matchesEvent = false;
+        if (filterEvent === "ALL") {
+          matchesEvent = true;
+        } else if (filterEvent === "EXPIRY_WARNING_1D") {
+          matchesEvent = isOneDayRecord(item);
+        } else {
+          matchesEvent = (item.event_type === filterEvent);
+        }
+
+        const matchesSearch = !searchTerm || 
+          (item.message && item.message.toLowerCase().includes(searchTerm)) ||
+          (item.vehicle_model && item.vehicle_model.toLowerCase().includes(searchTerm));
+
+        return matchesLevel && matchesEvent && matchesSearch;
+      });
+
+      renderTable(filtered);
+    }
+
+    function renderTable(logs) {
+      const tbody = document.getElementById("logs-tbody");
+      if (logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-500">Nessun log corrispondente ai filtri.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = logs.map(row => {
+        const isWarning1D = isOneDayRecord(row);
+
+        const vehicle = row.vehicle_model ? 
+          `<span class="text-slate-200 font-semibold">${row.vehicle_model}</span> ${row.vehicle_id ? `<span class="text-slate-500">#${row.vehicle_id}</span>` : ""}` : 
+          `<span class="text-slate-600">-</span>`;
+
+        return `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-2.5 px-4 whitespace-nowrap text-slate-400 font-mono">${formatDate(row.log_time)}</td>
+            <td class="py-2.5 px-4 whitespace-nowrap">${renderBadgeLevel(row.level)}</td>
+            <td class="py-2.5 px-4 whitespace-nowrap">${renderBadgeEvent(row.event_type, isWarning1D)}</td>
+            <td class="py-2.5 px-4 whitespace-nowrap font-sans">${vehicle}</td>
+            <td class="py-2.5 px-4 break-words font-sans text-slate-300">${row.message}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    document.getElementById("btn-refresh").addEventListener("click", fetchLogs);
+    document.getElementById("filter-search").addEventListener("input", applyClientFilters);
+    document.getElementById("filter-level").addEventListener("change", applyClientFilters);
+    document.getElementById("filter-event").addEventListener("change", applyClientFilters);
+    document.getElementById("filter-limit").addEventListener("change", fetchLogs);
+
+    lucide.createIcons();
+    fetchLogs();
+  </script>
+</body>
+</html>
