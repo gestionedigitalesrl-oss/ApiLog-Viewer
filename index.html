@@ -12,7 +12,7 @@
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Flatpickr (Calendario UI avanzato in Dark Theme) -->
+  <!-- Flatpickr -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -71,7 +71,7 @@
         <input type="text" id="filter-search" placeholder="Cerca testo..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500">
       </div>
 
-      <!-- Calendario Interattivo Flatpickr -->
+      <!-- Calendario Flatpickr -->
       <div class="w-52">
         <div class="flex items-center justify-between mb-1">
           <label class="block text-xs font-medium text-slate-400">Calendario</label>
@@ -157,7 +157,6 @@
     let logsCache = [];
     let selectedCalendarDate = "";
 
-    // Inizializzazione Calendario Flatpickr
     const calendarPicker = flatpickr("#filter-calendar", {
       locale: "it",
       dateFormat: "Y-m-d",
@@ -178,19 +177,25 @@
       return Boolean(textMatch || metaMatch);
     }
 
-    function formatDate(isoStr) {
-      if (!isoStr) return "-";
-      const d = new Date(isoStr);
-      return d.toLocaleDateString("it-IT") + " " + d.toLocaleTimeString("it-IT", { hour12: false });
+    // Parsing testuale: visualizza esattamente data e ora come salvate nel DB, senza applicare offset UTC
+    function formatDate(rawStr) {
+      if (!rawStr) return "-";
+      
+      const clean = rawStr.replace("T", " ").split("+")[0].split(".")[0];
+      const parts = clean.split(" ");
+      if (parts.length < 2) return rawStr;
+
+      const [year, month, day] = parts[0].split("-");
+      const time = parts[1];
+
+      if (!year || !month || !day) return rawStr;
+      return `${day}/${month}/${year} ${time}`;
     }
 
-    function getLocalDateString(isoStr) {
-      if (!isoStr) return "";
-      const d = new Date(isoStr);
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
+    // Estrae la data YYYY-MM-DD direttamente dalla stringa raw
+    function extractDateString(rawStr) {
+      if (!rawStr) return "";
+      return rawStr.substring(0, 10);
     }
 
     function renderBadgeLevel(level) {
@@ -271,7 +276,7 @@
           matchesEvent = (item.event_type === filterEvent);
         }
 
-        const matchesDate = !selectedCalendarDate || (getLocalDateString(item.log_time) === selectedCalendarDate);
+        const matchesDate = !selectedCalendarDate || (extractDateString(item.log_time) === selectedCalendarDate);
 
         const matchesSearch = !searchTerm || 
           (item.message && item.message.toLowerCase().includes(searchTerm)) ||
@@ -309,7 +314,6 @@
       }).join("");
     }
 
-    // Event Listener
     document.getElementById("btn-refresh").addEventListener("click", fetchLogs);
     document.getElementById("filter-search").addEventListener("input", applyClientFilters);
     document.getElementById("btn-clear-date").addEventListener("click", () => {
@@ -321,7 +325,6 @@
     document.getElementById("filter-event").addEventListener("change", applyClientFilters);
     document.getElementById("filter-limit").addEventListener("change", fetchLogs);
 
-    // Avvio
     lucide.createIcons();
     fetchLogs();
   </script>
