@@ -55,8 +55,8 @@
         <p id="stat-warning-1d" class="text-2xl font-bold mt-1 text-red-400">0</p>
       </div>
       <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-        <p class="text-xs text-slate-400 font-medium">Expiry Reached</p>
-        <p id="stat-expiry" class="text-2xl font-bold mt-1 text-amber-400">0</p>
+        <p class="text-xs text-slate-400 font-medium">Modalità Test</p>
+        <p id="stat-test" class="text-2xl font-bold mt-1 text-sky-400">0</p>
       </div>
       <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
         <p class="text-xs text-slate-400 font-medium">Aggiornamenti Riusciti</p>
@@ -64,63 +64,111 @@
       </div>
     </div>
 
-    <!-- Barra Filtri -->
-    <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-4 flex flex-wrap gap-4 items-center">
-      <div class="flex-1 min-w-[200px]">
-        <label class="block text-xs font-medium text-slate-400 mb-1">Cerca nel messaggio</label>
-        <input type="text" id="filter-search" placeholder="Cerca testo..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500">
-      </div>
-
-      <!-- Calendario Flatpickr -->
-      <div class="w-52">
-        <div class="flex items-center justify-between mb-1">
-          <label class="block text-xs font-medium text-slate-400">Calendario</label>
-          <button id="btn-clear-date" type="button" class="text-[10px] text-blue-400 hover:underline">Azzera</button>
+    <!-- Barra Filtri Principale -->
+    <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-4 space-y-4">
+      <div class="flex flex-wrap gap-4 items-center">
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-xs font-medium text-slate-400 mb-1">Cerca nel messaggio</label>
+          <input type="text" id="filter-search" placeholder="Cerca testo..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500">
         </div>
-        <div class="relative flex items-center">
-          <input 
-            type="text" 
-            id="filter-calendar" 
-            placeholder="Seleziona data..." 
-            readonly
-            class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-sm text-slate-200 cursor-pointer focus:outline-none focus:border-blue-500"
-          >
-          <i data-lucide="calendar" class="w-4 h-4 text-slate-400 absolute left-2.5 pointer-events-none"></i>
+
+        <!-- Calendario Flatpickr -->
+        <div class="w-52">
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-medium text-slate-400">Calendario</label>
+            <button id="btn-clear-date" type="button" class="text-[10px] text-blue-400 hover:underline">Azzera</button>
+          </div>
+          <div class="relative flex items-center">
+            <input 
+              type="text" 
+              id="filter-calendar" 
+              placeholder="Seleziona data..." 
+              readonly
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-sm text-slate-200 cursor-pointer focus:outline-none focus:border-blue-500"
+            >
+            <i data-lucide="calendar" class="w-4 h-4 text-slate-400 absolute left-2.5 pointer-events-none"></i>
+          </div>
+        </div>
+
+        <div class="w-32">
+          <label class="block text-xs font-medium text-slate-400 mb-1">Livello</label>
+          <select id="filter-level" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+            <option value="ALL">Tutti</option>
+            <option value="INFO">INFO</option>
+            <option value="WARNING">WARNING</option>
+            <option value="ERROR">ERROR</option>
+          </select>
+        </div>
+
+        <div class="w-28">
+          <label class="block text-xs font-medium text-slate-400 mb-1">Limite</label>
+          <select id="filter-limit" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+            <option value="50">50</option>
+            <option value="100" selected>100</option>
+            <option value="200">200</option>
+            <option value="500">500</option>
+          </select>
         </div>
       </div>
 
-      <div class="w-32">
-        <label class="block text-xs font-medium text-slate-400 mb-1">Livello</label>
-        <select id="filter-level" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
-          <option value="ALL">Tutti</option>
-          <option value="INFO">INFO</option>
-          <option value="WARNING">WARNING</option>
-          <option value="ERROR">ERROR</option>
-        </select>
-      </div>
+      <!-- Filtri Stato / Tipo Evento con Checkbox -->
+      <div class="border-t border-slate-700/50 pt-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Filtra per Tipo Evento / Stato:</span>
+          <div class="flex gap-2">
+            <button id="btn-check-all" type="button" class="text-[11px] text-blue-400 hover:underline">Tutti</button>
+            <span class="text-slate-600 text-xs">|</span>
+            <button id="btn-uncheck-all" type="button" class="text-[11px] text-blue-400 hover:underline">Nessuno</button>
+            <span class="text-slate-600 text-xs">|</span>
+            <button id="btn-reset-default" type="button" class="text-[11px] text-amber-400 hover:underline">Ripristina Default</button>
+          </div>
+        </div>
 
-      <div class="w-56">
-        <label class="block text-xs font-medium text-slate-400 mb-1">Tipo Evento</label>
-        <select id="filter-event" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
-          <option value="ALL">Tutti i tipi</option>
-          <option value="EXPIRY_WARNING_1D">EXPIRY_WARNING_1D (1 Giorno)</option>
-          <option value="EXPIRY_TRIGGER">Expiry Reached</option>
-          <option value="STATE_UPDATE_SUCCESS">STATE_UPDATE_SUCCESS</option>
-          <option value="SKIPPED_NO_ACTION">SKIPPED_NO_ACTION</option>
-          <option value="REALIGNMENT_REQUIRED">REALIGNMENT_REQUIRED</option>
-          <option value="JOB_START">JOB_START</option>
-          <option value="JOB_END">JOB_END</option>
-        </select>
-      </div>
+        <div class="flex flex-wrap gap-2 text-xs font-sans">
+          <!-- Default Checked: EXPIRY_WARNING_1D -->
+          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-red-600/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="EXPIRY_WARNING_1D" checked class="status-checkbox rounded bg-slate-800 border-slate-600 text-red-500 focus:ring-0">
+            <span class="text-red-400 font-semibold">EXPIRY_WARNING_1D</span>
+          </label>
 
-      <div class="w-28">
-        <label class="block text-xs font-medium text-slate-400 mb-1">Limite</label>
-        <select id="filter-limit" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
-          <option value="50">50</option>
-          <option value="100" selected>100</option>
-          <option value="200">200</option>
-          <option value="500">500</option>
-        </select>
+          <!-- Default Checked: EXPIRY_TRIGGER -->
+          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-amber-500/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="EXPIRY_TRIGGER" checked class="status-checkbox rounded bg-slate-800 border-slate-600 text-amber-500 focus:ring-0">
+            <span class="text-amber-300">Expiry Reached</span>
+          </label>
+
+          <!-- Default Checked: STATE_UPDATE_SUCCESS -->
+          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-emerald-500/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="STATE_UPDATE_SUCCESS" checked class="status-checkbox rounded bg-slate-800 border-slate-600 text-emerald-500 focus:ring-0">
+            <span class="text-emerald-400">STATE_UPDATE_SUCCESS</span>
+          </label>
+
+          <!-- Altri stati deselezionati di default -->
+          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="SKIPPED_NO_ACTION" class="status-checkbox rounded bg-slate-800 border-slate-600 text-slate-400 focus:ring-0">
+            <span class="text-slate-300">SKIPPED_NO_ACTION</span>
+          </label>
+
+          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-purple-500/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="REALIGNMENT_REQUIRED" class="status-checkbox rounded bg-slate-800 border-slate-600 text-purple-500 focus:ring-0">
+            <span class="text-purple-300">REALIGNMENT_REQUIRED</span>
+          </label>
+
+          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="JOB_START" class="status-checkbox rounded bg-slate-800 border-slate-600 text-blue-500 focus:ring-0">
+            <span class="text-slate-300">JOB_START</span>
+          </label>
+
+          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="JOB_END" class="status-checkbox rounded bg-slate-800 border-slate-600 text-blue-500 focus:ring-0">
+            <span class="text-slate-300">JOB_END</span>
+          </label>
+
+          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="OTHER" class="status-checkbox rounded bg-slate-800 border-slate-600 text-slate-500 focus:ring-0">
+            <span class="text-slate-400">Altri (SYSTEM/VEHICLE_LOG)</span>
+          </label>
+        </div>
       </div>
     </div>
 
@@ -177,10 +225,17 @@
       return Boolean(textMatch || metaMatch);
     }
 
-    // Parsing testuale: visualizza esattamente data e ora come salvate nel DB, senza applicare offset UTC
+    function isTestRecord(row) {
+      const msg = (row.message || "").toLowerCase();
+      const model = (row.vehicle_model || "").toLowerCase();
+      const metaStr = row.raw_metadata ? JSON.stringify(row.raw_metadata).toLowerCase() : "";
+
+      const testRegex = /\b(test|dry-run|dryrun|simulazione|mock)\b/i;
+      return testRegex.test(msg) || testRegex.test(model) || testRegex.test(metaStr);
+    }
+
     function formatDate(rawStr) {
       if (!rawStr) return "-";
-      
       const clean = rawStr.replace("T", " ").split("+")[0].split(".")[0];
       const parts = clean.split(" ");
       if (parts.length < 2) return rawStr;
@@ -192,7 +247,6 @@
       return `${day}/${month}/${year} ${time}`;
     }
 
-    // Estrae la data YYYY-MM-DD direttamente dalla stringa raw
     function extractDateString(rawStr) {
       if (!rawStr) return "";
       return rawStr.substring(0, 10);
@@ -255,29 +309,45 @@
     function updateStats() {
       document.getElementById("stat-total").innerText = logsCache.length;
       document.getElementById("stat-warning-1d").innerText = logsCache.filter(l => isOneDayRecord(l)).length;
-      document.getElementById("stat-expiry").innerText = logsCache.filter(l => l.event_type === "EXPIRY_TRIGGER").length;
+      document.getElementById("stat-test").innerText = logsCache.filter(l => isTestRecord(l)).length;
       document.getElementById("stat-success").innerText = logsCache.filter(l => l.event_type === "STATE_UPDATE_SUCCESS").length;
+    }
+
+    function getSelectedEventTypes() {
+      return Array.from(document.querySelectorAll(".status-checkbox:checked")).map(cb => cb.value);
     }
 
     function applyClientFilters() {
       const filterLevel = document.getElementById("filter-level").value;
-      const filterEvent = document.getElementById("filter-event").value;
+      const selectedEvents = getSelectedEventTypes();
       const searchTerm = document.getElementById("filter-search").value.toLowerCase();
 
+      const standardKnownTypes = [
+        "EXPIRY_WARNING_1D", "EXPIRY_TRIGGER", "STATE_UPDATE_SUCCESS", 
+        "SKIPPED_NO_ACTION", "REALIGNMENT_REQUIRED", "JOB_START", "JOB_END"
+      ];
+
       const filtered = logsCache.filter(item => {
+        // 1. Filtro Livello
         const matchesLevel = filterLevel === "ALL" || item.level === filterLevel;
         
-        let matchesEvent = false;
-        if (filterEvent === "ALL") {
-          matchesEvent = true;
-        } else if (filterEvent === "EXPIRY_WARNING_1D") {
-          matchesEvent = isOneDayRecord(item);
-        } else {
-          matchesEvent = (item.event_type === filterEvent);
+        // 2. Filtro Evento basato su checkbox
+        let actualType = item.event_type;
+        if (isOneDayRecord(item)) {
+          actualType = "EXPIRY_WARNING_1D";
         }
 
+        let matchesEvent = false;
+        if (selectedEvents.includes(actualType)) {
+          matchesEvent = true;
+        } else if (selectedEvents.includes("OTHER") && !standardKnownTypes.includes(actualType)) {
+          matchesEvent = true;
+        }
+
+        // 3. Filtro Calendario
         const matchesDate = !selectedCalendarDate || (extractDateString(item.log_time) === selectedCalendarDate);
 
+        // 4. Ricerca Testuale
         const matchesSearch = !searchTerm || 
           (item.message && item.message.toLowerCase().includes(searchTerm)) ||
           (item.vehicle_model && item.vehicle_model.toLowerCase().includes(searchTerm));
@@ -291,29 +361,42 @@
     function renderTable(logs) {
       const tbody = document.getElementById("logs-tbody");
       if (logs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-500">Nessun log corrispondente ai filtri.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-500">Nessun log corrispondente ai filtri selezionati.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = logs.map(row => {
         const isWarning1D = isOneDayRecord(row);
+        const isTest = isTestRecord(row);
 
         const vehicle = row.vehicle_model ? 
           `<span class="text-slate-200 font-semibold">${row.vehicle_model}</span> ${row.vehicle_id ? `<span class="text-slate-500">#${row.vehicle_id}</span>` : ""}` : 
           `<span class="text-slate-600">-</span>`;
 
+        let rowClass = "hover:bg-slate-800/40 transition";
+        if (isTest) {
+          rowClass = "bg-sky-950/20 border-l-2 border-l-sky-500/40 hover:bg-sky-900/30 transition";
+        }
+
+        const testTag = isTest 
+          ? `<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-medium bg-sky-900/40 text-sky-300 border border-sky-700/40 mr-1.5">TEST</span>` 
+          : "";
+
         return `
-          <tr class="hover:bg-slate-800/40 transition">
+          <tr class="${rowClass}">
             <td class="py-2.5 px-4 whitespace-nowrap text-slate-400 font-mono">${formatDate(row.log_time)}</td>
             <td class="py-2.5 px-4 whitespace-nowrap">${renderBadgeLevel(row.level)}</td>
             <td class="py-2.5 px-4 whitespace-nowrap">${renderBadgeEvent(row.event_type, isWarning1D)}</td>
             <td class="py-2.5 px-4 whitespace-nowrap font-sans">${vehicle}</td>
-            <td class="py-2.5 px-4 break-words font-sans text-slate-300">${row.message}</td>
+            <td class="py-2.5 px-4 break-words font-sans text-slate-300">
+              ${testTag}${row.message}
+            </td>
           </tr>
         `;
       }).join("");
     }
 
+    // Event Listener
     document.getElementById("btn-refresh").addEventListener("click", fetchLogs);
     document.getElementById("filter-search").addEventListener("input", applyClientFilters);
     document.getElementById("btn-clear-date").addEventListener("click", () => {
@@ -322,9 +405,33 @@
       applyClientFilters();
     });
     document.getElementById("filter-level").addEventListener("change", applyClientFilters);
-    document.getElementById("filter-event").addEventListener("change", applyClientFilters);
     document.getElementById("filter-limit").addEventListener("change", fetchLogs);
 
+    // Checkbox Events
+    document.querySelectorAll(".status-checkbox").forEach(cb => {
+      cb.addEventListener("change", applyClientFilters);
+    });
+
+    // Pulsanti rapidi per le checkbox
+    document.getElementById("btn-check-all").addEventListener("click", () => {
+      document.querySelectorAll(".status-checkbox").forEach(cb => cb.checked = true);
+      applyClientFilters();
+    });
+
+    document.getElementById("btn-uncheck-all").addEventListener("click", () => {
+      document.querySelectorAll(".status-checkbox").forEach(cb => cb.checked = false);
+      applyClientFilters();
+    });
+
+    document.getElementById("btn-reset-default").addEventListener("click", () => {
+      const defaults = ["EXPIRY_WARNING_1D", "EXPIRY_TRIGGER", "STATE_UPDATE_SUCCESS"];
+      document.querySelectorAll(".status-checkbox").forEach(cb => {
+        cb.checked = defaults.includes(cb.value);
+      });
+      applyClientFilters();
+    });
+
+    // Avvio
     lucide.createIcons();
     fetchLogs();
   </script>
