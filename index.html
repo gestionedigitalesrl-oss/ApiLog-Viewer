@@ -55,8 +55,8 @@
         <p id="stat-warning-1d" class="text-2xl font-bold mt-1 text-red-400">0</p>
       </div>
       <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-        <p class="text-xs text-slate-400 font-medium">Modalità Test</p>
-        <p id="stat-test" class="text-2xl font-bold mt-1 text-sky-400">0</p>
+        <p class="text-xs text-slate-400 font-medium">TERM ELAPSED</p>
+        <p id="stat-expiry" class="text-2xl font-bold mt-1 text-amber-400">0</p>
       </div>
       <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
         <p class="text-xs text-slate-400 font-medium">Aggiornamenti Riusciti</p>
@@ -88,6 +88,17 @@
             >
             <i data-lucide="calendar" class="w-4 h-4 text-slate-400 absolute left-2.5 pointer-events-none"></i>
           </div>
+        </div>
+
+        <!-- Filtro Modo Elaborazione -->
+        <div class="w-36">
+          <label class="block text-xs font-medium text-slate-400 mb-1">Modo Elaborazione</label>
+          <select id="filter-mode" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+            <option value="ALL">Tutti</option>
+            <option value="ENABLED">ENABLED</option>
+            <option value="DISABLED">DISABLED</option>
+            <option value="TEST">TEST</option>
+          </select>
         </div>
 
         <div class="w-32">
@@ -131,10 +142,10 @@
             <span class="text-red-400 font-semibold">EXPIRY_WARNING_1D</span>
           </label>
 
-          <!-- Default Checked: EXPIRY_TRIGGER -->
+          <!-- Default Checked: EXPIRY_TRIGGER (TERM ELAPSED) -->
           <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-amber-500/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
             <input type="checkbox" value="EXPIRY_TRIGGER" checked class="status-checkbox rounded bg-slate-800 border-slate-600 text-amber-500 focus:ring-0">
-            <span class="text-amber-300">Expiry Reached</span>
+            <span class="text-amber-300">TERM ELAPSED</span>
           </label>
 
           <!-- Default Checked: STATE_UPDATE_SUCCESS -->
@@ -179,6 +190,7 @@
           <thead class="bg-slate-950 text-slate-400 uppercase text-[11px] font-semibold tracking-wider border-b border-slate-800">
             <tr>
               <th class="py-3 px-4">Timestamp</th>
+              <th class="py-3 px-4">Modo</th>
               <th class="py-3 px-4">Livello</th>
               <th class="py-3 px-4">Tipo Evento</th>
               <th class="py-3 px-4">Veicolo / ID</th>
@@ -187,7 +199,7 @@
           </thead>
           <tbody id="logs-tbody" class="divide-y divide-slate-800/60 font-mono text-xs">
             <tr>
-              <td colspan="5" class="text-center py-8 text-slate-500">Caricamento log in corso...</td>
+              <td colspan="6" class="text-center py-8 text-slate-500">Caricamento log in corso...</td>
             </tr>
           </tbody>
         </table>
@@ -226,6 +238,7 @@
     }
 
     function isTestRecord(row) {
+      if (row.execution_mode === "TEST") return true;
       const msg = (row.message || "").toLowerCase();
       const model = (row.vehicle_model || "").toLowerCase();
       const metaStr = row.raw_metadata ? JSON.stringify(row.raw_metadata).toLowerCase() : "";
@@ -252,6 +265,18 @@
       return rawStr.substring(0, 10);
     }
 
+    function renderBadgeMode(mode) {
+      const m = (mode || "UNKNOWN").toUpperCase();
+      const badges = {
+        ENABLED: "bg-red-950/80 text-red-300 border-red-800",
+        DISABLED: "bg-blue-950/80 text-blue-300 border-blue-800",
+        TEST: "bg-amber-950/80 text-amber-300 border-amber-800",
+        UNKNOWN: "bg-slate-800 text-slate-400 border-slate-700"
+      };
+      const badgeStyle = badges[m] || badges.UNKNOWN;
+      return `<span class="px-2 py-0.5 rounded border text-[10px] font-bold tracking-wider uppercase ${badgeStyle}">${m}</span>`;
+    }
+
     function renderBadgeLevel(level) {
       const colors = {
         INFO: "bg-blue-950 text-blue-400 border-blue-800",
@@ -268,7 +293,7 @@
         return `<span class="px-2 py-0.5 rounded border text-[10px] font-medium font-sans bg-red-950/60 text-red-400 border-red-800/80">EXPIRY_WARNING_1D</span>`;
       }
       if (evt === "EXPIRY_TRIGGER") {
-        return `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans bg-amber-500/10 text-amber-300 border-amber-500/20">Expiry Reached</span>`;
+        return `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans bg-amber-500/10 text-amber-300 border-amber-500/20">TERM ELAPSED</span>`;
       }
 
       const colors = {
@@ -309,7 +334,7 @@
     function updateStats() {
       document.getElementById("stat-total").innerText = logsCache.length;
       document.getElementById("stat-warning-1d").innerText = logsCache.filter(l => isOneDayRecord(l)).length;
-      document.getElementById("stat-test").innerText = logsCache.filter(l => isTestRecord(l)).length;
+      document.getElementById("stat-expiry").innerText = logsCache.filter(l => l.event_type === "EXPIRY_TRIGGER").length;
       document.getElementById("stat-success").innerText = logsCache.filter(l => l.event_type === "STATE_UPDATE_SUCCESS").length;
     }
 
@@ -319,6 +344,7 @@
 
     function applyClientFilters() {
       const filterLevel = document.getElementById("filter-level").value;
+      const filterMode = document.getElementById("filter-mode").value;
       const selectedEvents = getSelectedEventTypes();
       const searchTerm = document.getElementById("filter-search").value.toLowerCase();
 
@@ -328,10 +354,11 @@
       ];
 
       const filtered = logsCache.filter(item => {
-        // 1. Filtro Livello
         const matchesLevel = filterLevel === "ALL" || item.level === filterLevel;
         
-        // 2. Filtro Evento basato su checkbox
+        const currentMode = (item.execution_mode || "UNKNOWN").toUpperCase();
+        const matchesMode = filterMode === "ALL" || currentMode === filterMode;
+
         let actualType = item.event_type;
         if (isOneDayRecord(item)) {
           actualType = "EXPIRY_WARNING_1D";
@@ -344,15 +371,13 @@
           matchesEvent = true;
         }
 
-        // 3. Filtro Calendario
         const matchesDate = !selectedCalendarDate || (extractDateString(item.log_time) === selectedCalendarDate);
 
-        // 4. Ricerca Testuale
         const matchesSearch = !searchTerm || 
           (item.message && item.message.toLowerCase().includes(searchTerm)) ||
           (item.vehicle_model && item.vehicle_model.toLowerCase().includes(searchTerm));
 
-        return matchesLevel && matchesEvent && matchesDate && matchesSearch;
+        return matchesLevel && matchesMode && matchesEvent && matchesDate && matchesSearch;
       });
 
       renderTable(filtered);
@@ -361,7 +386,7 @@
     function renderTable(logs) {
       const tbody = document.getElementById("logs-tbody");
       if (logs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-500">Nessun log corrispondente ai filtri selezionati.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500">Nessun log corrispondente ai filtri selezionati.</td></tr>`;
         return;
       }
 
@@ -378,18 +403,15 @@
           rowClass = "bg-sky-950/20 border-l-2 border-l-sky-500/40 hover:bg-sky-900/30 transition";
         }
 
-        const testTag = isTest 
-          ? `<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-medium bg-sky-900/40 text-sky-300 border border-sky-700/40 mr-1.5">TEST</span>` 
-          : "";
-
         return `
           <tr class="${rowClass}">
             <td class="py-2.5 px-4 whitespace-nowrap text-slate-400 font-mono">${formatDate(row.log_time)}</td>
+            <td class="py-2.5 px-4 whitespace-nowrap">${renderBadgeMode(row.execution_mode)}</td>
             <td class="py-2.5 px-4 whitespace-nowrap">${renderBadgeLevel(row.level)}</td>
             <td class="py-2.5 px-4 whitespace-nowrap">${renderBadgeEvent(row.event_type, isWarning1D)}</td>
             <td class="py-2.5 px-4 whitespace-nowrap font-sans">${vehicle}</td>
             <td class="py-2.5 px-4 break-words font-sans text-slate-300">
-              ${testTag}${row.message}
+              ${row.message}
             </td>
           </tr>
         `;
@@ -405,14 +427,13 @@
       applyClientFilters();
     });
     document.getElementById("filter-level").addEventListener("change", applyClientFilters);
+    document.getElementById("filter-mode").addEventListener("change", applyClientFilters);
     document.getElementById("filter-limit").addEventListener("change", fetchLogs);
 
-    // Checkbox Events
     document.querySelectorAll(".status-checkbox").forEach(cb => {
       cb.addEventListener("change", applyClientFilters);
     });
 
-    // Pulsanti rapidi per le checkbox
     document.getElementById("btn-check-all").addEventListener("click", () => {
       document.querySelectorAll(".status-checkbox").forEach(cb => cb.checked = true);
       applyClientFilters();
@@ -431,7 +452,6 @@
       applyClientFilters();
     });
 
-    // Avvio
     lucide.createIcons();
     fetchLogs();
   </script>
