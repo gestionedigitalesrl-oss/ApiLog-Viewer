@@ -308,8 +308,8 @@
       if (row.event_type === "EXPIRY_WARNING_1D") return true;
       const msg = row.message || "";
       const textMatch = /\btrigger\s+tra\s+1\s*(gg|giorno|day)\b/i.test(msg);
-      const metaMatch = row.raw_metadata && (row.raw_metadata.days_elapsed === 1 || row.raw_metadata.days_elapsed === "1");
-      return Boolean(textMatch || metaMatch);
+      //const metaMatch = row.raw_metadata && (row.raw_metadata.days_elapsed === 1 || row.raw_metadata.days_elapsed === "1");
+      return Boolean(textMatch);
     }
 
     function isTestRecord(row) {
