@@ -29,10 +29,24 @@
           <i data-lucide="activity" class="text-blue-500"></i>
           Monitor Log API & Flotta
         </h1>
-        <p class="text-sm text-slate-400">Tabella di riferimento: <code class="text-blue-400">api_vehicle_logs</code></p>
+        <p class="text-sm text-slate-400">
+          Tabella attiva: <code id="active-table-name" class="text-blue-400">api_vehicle_logs</code>
+        </p>
       </div>
 
-      <div class="flex items-center gap-3">
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Switcher Viste / Tabelle -->
+        <div class="bg-slate-800/80 p-1 border border-slate-700 rounded-xl flex items-center gap-1">
+          <button id="btn-view-logs" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition bg-blue-600 text-white shadow">
+            <i data-lucide="list" class="w-3.5 h-3.5"></i>
+            Log API
+          </button>
+          <button id="btn-view-vehicles" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition text-slate-400 hover:text-white">
+            <i data-lucide="car" class="w-3.5 h-3.5"></i>
+            Tabella Veicoli
+          </button>
+        </div>
+
         <span id="sync-status" class="text-xs text-slate-400 flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           Connesso
@@ -45,22 +59,22 @@
     </header>
 
     <!-- Statistiche Rapide -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div id="stats-container" class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-        <p class="text-xs text-slate-400 font-medium">Totale Record Letti</p>
-        <p id="stat-total" class="text-2xl font-bold mt-1 text-white">0</p>
+        <p id="stat-label-1" class="text-xs text-slate-400 font-medium">Totale Record Letti</p>
+        <p id="stat-val-1" class="text-2xl font-bold mt-1 text-white">0</p>
       </div>
       <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-        <p class="text-xs text-slate-400 font-medium">Scadenza 1 Giorno</p>
-        <p id="stat-warning-1d" class="text-2xl font-bold mt-1 text-red-400">0</p>
+        <p id="stat-label-2" class="text-xs text-slate-400 font-medium">Scadenza 1 Giorno</p>
+        <p id="stat-val-2" class="text-2xl font-bold mt-1 text-red-400">0</p>
       </div>
       <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-        <p class="text-xs text-slate-400 font-medium">TERM ELAPSED</p>
-        <p id="stat-expiry" class="text-2xl font-bold mt-1 text-amber-400">0</p>
+        <p id="stat-label-3" class="text-xs text-slate-400 font-medium">TERM ELAPSED</p>
+        <p id="stat-val-3" class="text-2xl font-bold mt-1 text-amber-400">0</p>
       </div>
       <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-        <p class="text-xs text-slate-400 font-medium">Aggiornamenti Riusciti</p>
-        <p id="stat-success" class="text-2xl font-bold mt-1 text-emerald-400">0</p>
+        <p id="stat-label-4" class="text-xs text-slate-400 font-medium">Aggiornamenti Riusciti</p>
+        <p id="stat-val-4" class="text-2xl font-bold mt-1 text-emerald-400">0</p>
       </div>
     </div>
 
@@ -68,12 +82,12 @@
     <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-4 space-y-4">
       <div class="flex flex-wrap gap-4 items-center">
         <div class="flex-1 min-w-[200px]">
-          <label class="block text-xs font-medium text-slate-400 mb-1">Cerca nel messaggio</label>
-          <input type="text" id="filter-search" placeholder="Cerca testo..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-medium text-slate-400 mb-1">Cerca nel testo</label>
+          <input type="text" id="filter-search" placeholder="Cerca veicolo, id, messaggio..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500">
         </div>
 
-        <!-- Calendario Flatpickr -->
-        <div class="w-52">
+        <!-- Calendario Flatpickr (solo vista Log) -->
+        <div id="container-calendar" class="w-52">
           <div class="flex items-center justify-between mb-1">
             <label class="block text-xs font-medium text-slate-400">Calendario</label>
             <button id="btn-clear-date" type="button" class="text-[10px] text-blue-400 hover:underline">Azzera</button>
@@ -90,8 +104,8 @@
           </div>
         </div>
 
-        <!-- Filtro Modo Elaborazione -->
-        <div class="w-36">
+        <!-- Filtro Modo Elaborazione (solo vista Log) -->
+        <div id="container-mode" class="w-36">
           <label class="block text-xs font-medium text-slate-400 mb-1">Modo Elaborazione</label>
           <select id="filter-mode" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
             <option value="ALL">Tutti</option>
@@ -101,7 +115,18 @@
           </select>
         </div>
 
-        <div class="w-32">
+        <!-- Filtro Canale (solo vista Veicoli) -->
+        <div id="container-channel" class="w-36 hidden">
+          <label class="block text-xs font-medium text-slate-400 mb-1">Filtro Canale</label>
+          <select id="filter-channel" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+            <option value="ALL">Tutti i canali</option>
+            <option value="subito">Subito.it</option>
+            <option value="autoscout">AutoScout24</option>
+          </select>
+        </div>
+
+        <!-- Filtro Livello (solo vista Log) -->
+        <div id="container-level" class="w-32">
           <label class="block text-xs font-medium text-slate-400 mb-1">Livello</label>
           <select id="filter-level" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
             <option value="ALL">Tutti</option>
@@ -122,8 +147,8 @@
         </div>
       </div>
 
-      <!-- Filtri Stato / Tipo Evento con Checkbox -->
-      <div class="border-t border-slate-700/50 pt-3">
+      <!-- Filtri Stato / Tipo Evento con Checkbox (solo vista Log) -->
+      <div id="container-events-filter" class="border-t border-slate-700/50 pt-3">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Filtra per Tipo Evento / Stato:</span>
           <div class="flex gap-2">
@@ -136,25 +161,21 @@
         </div>
 
         <div class="flex flex-wrap gap-2 text-xs font-sans">
-          <!-- Default Checked: EXPIRY_WARNING_1D -->
           <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-red-600/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
             <input type="checkbox" value="EXPIRY_WARNING_1D" checked class="status-checkbox rounded bg-slate-800 border-slate-600 text-red-500 focus:ring-0">
             <span class="text-red-400 font-semibold">EXPIRY_WARNING_1D</span>
           </label>
 
-          <!-- Default Checked: EXPIRY_TRIGGER (TERM ELAPSED) -->
           <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-amber-500/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
             <input type="checkbox" value="EXPIRY_TRIGGER" checked class="status-checkbox rounded bg-slate-800 border-slate-600 text-amber-500 focus:ring-0">
             <span class="text-amber-300">TERM ELAPSED</span>
           </label>
 
-          <!-- Default Checked: STATE_UPDATE_SUCCESS -->
           <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-emerald-500/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
             <input type="checkbox" value="STATE_UPDATE_SUCCESS" checked class="status-checkbox rounded bg-slate-800 border-slate-600 text-emerald-500 focus:ring-0">
             <span class="text-emerald-400">STATE_UPDATE_SUCCESS</span>
           </label>
 
-          <!-- Altri stati deselezionati di default -->
           <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
             <input type="checkbox" value="SKIPPED_NO_ACTION" class="status-checkbox rounded bg-slate-800 border-slate-600 text-slate-400 focus:ring-0">
             <span class="text-slate-300">SKIPPED_NO_ACTION</span>
@@ -183,23 +204,16 @@
       </div>
     </div>
 
-    <!-- Tabella Log -->
+    <!-- Contenitore Tabella Dati -->
     <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg">
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm border-collapse">
-          <thead class="bg-slate-950 text-slate-400 uppercase text-[11px] font-semibold tracking-wider border-b border-slate-800">
-            <tr>
-              <th class="py-3 px-4">Timestamp</th>
-              <th class="py-3 px-4">Modo</th>
-              <th class="py-3 px-4">Livello</th>
-              <th class="py-3 px-4">Tipo Evento</th>
-              <th class="py-3 px-4">Veicolo / ID</th>
-              <th class="py-3 px-4">Messaggio</th>
-            </tr>
+          <thead id="table-thead" class="bg-slate-950 text-slate-400 uppercase text-[11px] font-semibold tracking-wider border-b border-slate-800">
+            <!-- Intestazioni generate dinamicamente in JS -->
           </thead>
-          <tbody id="logs-tbody" class="divide-y divide-slate-800/60 font-mono text-xs">
+          <tbody id="table-tbody" class="divide-y divide-slate-800/60 font-mono text-xs">
             <tr>
-              <td colspan="6" class="text-center py-8 text-slate-500">Caricamento log in corso...</td>
+              <td colspan="7" class="text-center py-8 text-slate-500">Caricamento in corso...</td>
             </tr>
           </tbody>
         </table>
@@ -214,7 +228,9 @@
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    let currentView = "logs"; // "logs" oppure "vehicles"
     let logsCache = [];
+    let vehiclesCache = [];
     let selectedCalendarDate = "";
 
     const calendarPicker = flatpickr("#filter-calendar", {
@@ -225,9 +241,46 @@
       allowInput: false,
       onChange: function(selectedDates, dateStr) {
         selectedCalendarDate = dateStr;
-        applyClientFilters();
+        applyFilters();
       }
     });
+
+    function setView(view) {
+      currentView = view;
+      const btnLogs = document.getElementById("btn-view-logs");
+      const btnVehicles = document.getElementById("btn-view-vehicles");
+      const activeTableName = document.getElementById("active-table-name");
+
+      const containerCal = document.getElementById("container-calendar");
+      const containerMode = document.getElementById("container-mode");
+      const containerLevel = document.getElementById("container-level");
+      const containerChannel = document.getElementById("container-channel");
+      const containerEvents = document.getElementById("container-events-filter");
+
+      if (view === "logs") {
+        btnLogs.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition bg-blue-600 text-white shadow";
+        btnVehicles.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition text-slate-400 hover:text-white";
+        activeTableName.innerText = "api_vehicle_logs";
+
+        containerCal.classList.remove("hidden");
+        containerMode.classList.remove("hidden");
+        containerLevel.classList.remove("hidden");
+        containerChannel.classList.add("hidden");
+        containerEvents.classList.remove("hidden");
+      } else {
+        btnVehicles.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition bg-blue-600 text-white shadow";
+        btnLogs.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition text-slate-400 hover:text-white";
+        activeTableName.innerText = "operazioni_veicoli";
+
+        containerCal.classList.add("hidden");
+        containerMode.classList.add("hidden");
+        containerLevel.classList.add("hidden");
+        containerChannel.classList.remove("hidden");
+        containerEvents.classList.add("hidden");
+      }
+
+      fetchData();
+    }
 
     function isOneDayRecord(row) {
       if (row.event_type === "EXPIRY_WARNING_1D") return true;
@@ -242,7 +295,6 @@
       const msg = (row.message || "").toLowerCase();
       const model = (row.vehicle_model || "").toLowerCase();
       const metaStr = row.raw_metadata ? JSON.stringify(row.raw_metadata).toLowerCase() : "";
-
       const testRegex = /\b(test|dry-run|dryrun|simulazione|mock)\b/i;
       return testRegex.test(msg) || testRegex.test(model) || testRegex.test(metaStr);
     }
@@ -251,11 +303,13 @@
       if (!rawStr) return "-";
       const clean = rawStr.replace("T", " ").split("+")[0].split(".")[0];
       const parts = clean.split(" ");
-      if (parts.length < 2) return rawStr;
-
+      if (parts.length < 2) {
+        const d = clean.split("-");
+        if (d.length === 3) return `${d[2]}/${d[1]}/${d[0]}`;
+        return rawStr;
+      }
       const [year, month, day] = parts[0].split("-");
       const time = parts[1];
-
       if (!year || !month || !day) return rawStr;
       return `${day}/${month}/${year} ${time}`;
     }
@@ -295,7 +349,6 @@
       if (evt === "EXPIRY_TRIGGER") {
         return `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans bg-amber-500/10 text-amber-300 border-amber-500/20">TERM ELAPSED</span>`;
       }
-
       const colors = {
         STATE_UPDATE_SUCCESS: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
         SKIPPED_NO_ACTION: "bg-slate-700/30 text-slate-400 border-slate-600/30",
@@ -305,88 +358,157 @@
       return `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans ${c}">${evt}</span>`;
     }
 
-    async function fetchLogs() {
+    function renderStatusPill(statusVal) {
+      if (statusVal === 1) {
+        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Attivo</span>`;
+      } else if (statusVal === 0) {
+        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20"><span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Spento</span>`;
+      }
+      return `<span class="text-slate-500 text-[10px]">-</span>`;
+    }
+
+    async function fetchData() {
       const limit = parseInt(document.getElementById("filter-limit").value, 10);
       const statusEl = document.getElementById("sync-status");
       statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-spin"></span> Caricamento...`;
 
       try {
-        let query = supabaseClient
-          .from("api_vehicle_logs")
-          .select("*")
-          .order("log_time", { ascending: false })
-          .limit(limit);
+        if (currentView === "logs") {
+          let query = supabaseClient
+            .from("api_vehicle_logs")
+            .select("*")
+            .order("log_time", { ascending: false })
+            .limit(limit);
 
-        const { data, error } = await query;
-        if (error) throw error;
+          const { data, error } = await query;
+          if (error) throw error;
+          logsCache = data || [];
+        } else {
+          let query = supabaseClient
+            .from("operazioni_veicoli")
+            .select("*")
+            .order("data_acquisizione", { ascending: false })
+            .limit(limit);
 
-        logsCache = data || [];
+          const { data, error } = await query;
+          if (error) throw error;
+          vehiclesCache = data || [];
+        }
+
         updateStats();
-        applyClientFilters();
+        applyFilters();
 
         statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Aggiornato: ${new Date().toLocaleTimeString()}`;
       } catch (err) {
         console.error("Errore fetch:", err);
-        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> Errore sincronizzazione`;
+        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> Errore sync`;
       }
     }
 
     function updateStats() {
-      document.getElementById("stat-total").innerText = logsCache.length;
-      document.getElementById("stat-warning-1d").innerText = logsCache.filter(l => isOneDayRecord(l)).length;
-      document.getElementById("stat-expiry").innerText = logsCache.filter(l => l.event_type === "EXPIRY_TRIGGER").length;
-      document.getElementById("stat-success").innerText = logsCache.filter(l => l.event_type === "STATE_UPDATE_SUCCESS").length;
+      if (currentView === "logs") {
+        document.getElementById("stat-label-1").innerText = "Totale Record Letti";
+        document.getElementById("stat-val-1").innerText = logsCache.length;
+
+        document.getElementById("stat-label-2").innerText = "Scadenza 1 Giorno";
+        document.getElementById("stat-val-2").innerText = logsCache.filter(l => isOneDayRecord(l)).length;
+
+        document.getElementById("stat-label-3").innerText = "TERM ELAPSED";
+        document.getElementById("stat-val-3").innerText = logsCache.filter(l => l.event_type === "EXPIRY_TRIGGER").length;
+
+        document.getElementById("stat-label-4").innerText = "Aggiornamenti Riusciti";
+        document.getElementById("stat-val-4").innerText = logsCache.filter(l => l.event_type === "STATE_UPDATE_SUCCESS").length;
+      } else {
+        document.getElementById("stat-label-1").innerText = "Totale Flotta Veicoli";
+        document.getElementById("stat-val-1").innerText = vehiclesCache.length;
+
+        document.getElementById("stat-label-2").innerText = "Subito Attivi";
+        document.getElementById("stat-val-2").innerText = vehiclesCache.filter(v => v.status_subito === 1).length;
+
+        document.getElementById("stat-label-3").innerText = "AutoScout Attivi";
+        document.getElementById("stat-val-3").innerText = vehiclesCache.filter(v => v.status_autoscout === 1).length;
+
+        document.getElementById("stat-label-4").innerText = "Disattivati (Subito/AS)";
+        document.getElementById("stat-val-4").innerText = vehiclesCache.filter(v => v.status_subito === 0 || v.status_autoscout === 0).length;
+      }
     }
 
     function getSelectedEventTypes() {
       return Array.from(document.querySelectorAll(".status-checkbox:checked")).map(cb => cb.value);
     }
 
-    function applyClientFilters() {
-      const filterLevel = document.getElementById("filter-level").value;
-      const filterMode = document.getElementById("filter-mode").value;
-      const selectedEvents = getSelectedEventTypes();
+    function applyFilters() {
       const searchTerm = document.getElementById("filter-search").value.toLowerCase();
 
-      const standardKnownTypes = [
-        "EXPIRY_WARNING_1D", "EXPIRY_TRIGGER", "STATE_UPDATE_SUCCESS", 
-        "SKIPPED_NO_ACTION", "REALIGNMENT_REQUIRED", "JOB_START", "JOB_END"
-      ];
+      if (currentView === "logs") {
+        const filterLevel = document.getElementById("filter-level").value;
+        const filterMode = document.getElementById("filter-mode").value;
+        const selectedEvents = getSelectedEventTypes();
 
-      const filtered = logsCache.filter(item => {
-        const matchesLevel = filterLevel === "ALL" || item.level === filterLevel;
-        
-        const currentMode = (item.execution_mode || "UNKNOWN").toUpperCase();
-        const matchesMode = filterMode === "ALL" || currentMode === filterMode;
+        const standardKnownTypes = [
+          "EXPIRY_WARNING_1D", "EXPIRY_TRIGGER", "STATE_UPDATE_SUCCESS", 
+          "SKIPPED_NO_ACTION", "REALIGNMENT_REQUIRED", "JOB_START", "JOB_END"
+        ];
 
-        let actualType = item.event_type;
-        if (isOneDayRecord(item)) {
-          actualType = "EXPIRY_WARNING_1D";
-        }
+        const filtered = logsCache.filter(item => {
+          const matchesLevel = filterLevel === "ALL" || item.level === filterLevel;
+          const currentMode = (item.execution_mode || "UNKNOWN").toUpperCase();
+          const matchesMode = filterMode === "ALL" || currentMode === filterMode;
 
-        let matchesEvent = false;
-        if (selectedEvents.includes(actualType)) {
-          matchesEvent = true;
-        } else if (selectedEvents.includes("OTHER") && !standardKnownTypes.includes(actualType)) {
-          matchesEvent = true;
-        }
+          let actualType = item.event_type;
+          if (isOneDayRecord(item)) actualType = "EXPIRY_WARNING_1D";
 
-        const matchesDate = !selectedCalendarDate || (extractDateString(item.log_time) === selectedCalendarDate);
+          let matchesEvent = false;
+          if (selectedEvents.includes(actualType)) {
+            matchesEvent = true;
+          } else if (selectedEvents.includes("OTHER") && !standardKnownTypes.includes(actualType)) {
+            matchesEvent = true;
+          }
 
-        const matchesSearch = !searchTerm || 
-          (item.message && item.message.toLowerCase().includes(searchTerm)) ||
-          (item.vehicle_model && item.vehicle_model.toLowerCase().includes(searchTerm));
+          const matchesDate = !selectedCalendarDate || (extractDateString(item.log_time) === selectedCalendarDate);
 
-        return matchesLevel && matchesMode && matchesEvent && matchesDate && matchesSearch;
-      });
+          const matchesSearch = !searchTerm || 
+            (item.message && item.message.toLowerCase().includes(searchTerm)) ||
+            (item.vehicle_model && item.vehicle_model.toLowerCase().includes(searchTerm));
 
-      renderTable(filtered);
+          return matchesLevel && matchesMode && matchesEvent && matchesDate && matchesSearch;
+        });
+
+        renderLogsTable(filtered);
+      } else {
+        const filterChannel = document.getElementById("filter-channel").value;
+
+        const filtered = vehiclesCache.filter(item => {
+          const matchesSearch = !searchTerm ||
+            (item.descrizione && item.descrizione.toLowerCase().includes(searchTerm)) ||
+            (item.id && String(item.id).toLowerCase().includes(searchTerm));
+
+          const flag = (item.flag || "").toLowerCase();
+          const matchesChannel = filterChannel === "ALL" || flag.includes(filterChannel);
+
+          return matchesSearch && matchesChannel;
+        });
+
+        renderVehiclesTable(filtered);
+      }
     }
 
-    function renderTable(logs) {
-      const tbody = document.getElementById("logs-tbody");
+    function renderLogsTable(logs) {
+      const thead = document.getElementById("table-thead");
+      thead.innerHTML = `
+        <tr>
+          <th class="py-3 px-4">Timestamp</th>
+          <th class="py-3 px-4">Modo</th>
+          <th class="py-3 px-4">Livello</th>
+          <th class="py-3 px-4">Tipo Evento</th>
+          <th class="py-3 px-4">Veicolo / ID</th>
+          <th class="py-3 px-4">Messaggio</th>
+        </tr>
+      `;
+
+      const tbody = document.getElementById("table-tbody");
       if (logs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500">Nessun log corrispondente ai filtri selezionati.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500">Nessun log trovato.</td></tr>`;
         return;
       }
 
@@ -418,30 +540,74 @@
       }).join("");
     }
 
-    // Event Listener
-    document.getElementById("btn-refresh").addEventListener("click", fetchLogs);
-    document.getElementById("filter-search").addEventListener("input", applyClientFilters);
+    function renderVehiclesTable(vehicles) {
+      const thead = document.getElementById("table-thead");
+      thead.innerHTML = `
+        <tr>
+          <th class="py-3 px-4">ID</th>
+          <th class="py-3 px-4">Modello / Veicolo</th>
+          <th class="py-3 px-4">Canale (Flag)</th>
+          <th class="py-3 px-4">Stato Subito</th>
+          <th class="py-3 px-4">Pubbl. Subito</th>
+          <th class="py-3 px-4">Disattivazione Subito</th>
+          <th class="py-3 px-4">Stato AutoScout</th>
+          <th class="py-3 px-4">Pubbl. AutoScout</th>
+          <th class="py-3 px-4">Disattivazione AutoScout</th>
+        </tr>
+      `;
+
+      const tbody = document.getElementById("table-tbody");
+      if (vehicles.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-500">Nessun veicolo trovato.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = vehicles.map(row => {
+        return `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-2.5 px-4 font-mono font-bold text-blue-400 whitespace-nowrap">#${row.id}</td>
+            <td class="py-2.5 px-4 font-sans text-slate-200 font-medium whitespace-nowrap">${row.descrizione || "-"}</td>
+            <td class="py-2.5 px-4 font-mono text-xs text-slate-400 whitespace-nowrap">${row.flag || "-"}</td>
+            <td class="py-2.5 px-4 whitespace-nowrap">${renderStatusPill(row.status_subito)}</td>
+            <td class="py-2.5 px-4 whitespace-nowrap text-slate-300 font-mono text-xs">${formatDate(row.data_p_subito)}</td>
+            <td class="py-2.5 px-4 whitespace-nowrap text-rose-300 font-mono text-xs">${formatDate(row.data_disattivazione_subito)}</td>
+            <td class="py-2.5 px-4 whitespace-nowrap">${renderStatusPill(row.status_autoscout)}</td>
+            <td class="py-2.5 px-4 whitespace-nowrap text-slate-300 font-mono text-xs">${formatDate(row.data_p_autoscout)}</td>
+            <td class="py-2.5 px-4 whitespace-nowrap text-rose-300 font-mono text-xs">${formatDate(row.data_disattivazione_autoscout)}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // Event Listeners Navigazione
+    document.getElementById("btn-view-logs").addEventListener("click", () => setView("logs"));
+    document.getElementById("btn-view-vehicles").addEventListener("click", () => setView("vehicles"));
+
+    // Event Listeners Filtri & Azioni
+    document.getElementById("btn-refresh").addEventListener("click", fetchData);
+    document.getElementById("filter-search").addEventListener("input", applyFilters);
     document.getElementById("btn-clear-date").addEventListener("click", () => {
       calendarPicker.clear();
       selectedCalendarDate = "";
-      applyClientFilters();
+      applyFilters();
     });
-    document.getElementById("filter-level").addEventListener("change", applyClientFilters);
-    document.getElementById("filter-mode").addEventListener("change", applyClientFilters);
-    document.getElementById("filter-limit").addEventListener("change", fetchLogs);
+    document.getElementById("filter-level").addEventListener("change", applyFilters);
+    document.getElementById("filter-mode").addEventListener("change", applyFilters);
+    document.getElementById("filter-channel").addEventListener("change", applyFilters);
+    document.getElementById("filter-limit").addEventListener("change", fetchData);
 
     document.querySelectorAll(".status-checkbox").forEach(cb => {
-      cb.addEventListener("change", applyClientFilters);
+      cb.addEventListener("change", applyFilters);
     });
 
     document.getElementById("btn-check-all").addEventListener("click", () => {
       document.querySelectorAll(".status-checkbox").forEach(cb => cb.checked = true);
-      applyClientFilters();
+      applyFilters();
     });
 
     document.getElementById("btn-uncheck-all").addEventListener("click", () => {
       document.querySelectorAll(".status-checkbox").forEach(cb => cb.checked = false);
-      applyClientFilters();
+      applyFilters();
     });
 
     document.getElementById("btn-reset-default").addEventListener("click", () => {
@@ -449,11 +615,11 @@
       document.querySelectorAll(".status-checkbox").forEach(cb => {
         cb.checked = defaults.includes(cb.value);
       });
-      applyClientFilters();
+      applyFilters();
     });
 
     lucide.createIcons();
-    fetchLogs();
+    fetchData();
   </script>
 </body>
 </html>
