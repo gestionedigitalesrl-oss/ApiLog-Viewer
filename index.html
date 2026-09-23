@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Log API & Veicoli</title>
-  <!-- TEST COMMIT VS GITHUB -->
+
   <!-- Tailwind CSS & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -307,7 +307,7 @@
     function isOneDayRecord(row) {
       if (row.event_type === "EXPIRY_WARNING_1D") return true;
       const msg = row.message || "";
-      const textMatch = /\b1\s*(gg|giorno|day)\b/i.test(msg);
+      const textMatch = /\btrigger\s+tra\s+1\s*(gg|giorno|day)\b/i.test(msg);
       const metaMatch = row.raw_metadata && (row.raw_metadata.days_elapsed === 1 || row.raw_metadata.days_elapsed === "1");
       return Boolean(textMatch || metaMatch);
     }
