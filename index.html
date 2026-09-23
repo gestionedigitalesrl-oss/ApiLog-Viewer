@@ -17,24 +17,40 @@
   <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10n/it.js"></script>
-</head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8 font-sans">
 
-  <div class="max-w-7xl mx-auto space-y-6">
+  <style>
+    /* Troncamento a 2 righe con transizione fluida */
+    .clamp-text {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+    .expanded-text {
+      display: block;
+      word-break: break-word;
+      white-space: normal;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-3 sm:p-5 md:p-8 font-sans antialiased selection:bg-blue-600 selection:text-white">
+
+  <div class="max-w-7xl mx-auto space-y-4 md:space-y-6">
     
     <!-- Intestazione -->
-    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4 md:pb-5">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+        <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
           <i data-lucide="activity" class="text-blue-500"></i>
           Monitor Log API & Flotta
         </h1>
-        <p class="text-sm text-slate-400">
-          Tabella attiva: <code id="active-table-name" class="text-blue-400">api_vehicle_logs</code>
+        <p class="text-xs sm:text-sm text-slate-400 mt-0.5">
+          Tabella attiva: <code id="active-table-name" class="text-blue-400 font-mono">api_vehicle_logs</code>
         </p>
       </div>
 
-      <div class="flex flex-wrap items-center gap-3">
+      <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
         <!-- Switcher Viste / Tabelle -->
         <div class="bg-slate-800/80 p-1 border border-slate-700 rounded-xl flex items-center gap-1">
           <button id="btn-view-logs" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition bg-blue-600 text-white shadow">
@@ -47,11 +63,11 @@
           </button>
         </div>
 
-        <span id="sync-status" class="text-xs text-slate-400 flex items-center gap-1.5">
+        <span id="sync-status" class="text-xs text-slate-400 flex items-center gap-1.5 bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-700/60">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           Connesso
         </span>
-        <button id="btn-refresh" class="bg-blue-600 hover:bg-blue-500 transition px-3.5 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 shadow-sm">
+        <button id="btn-refresh" class="bg-blue-600 hover:bg-blue-500 active:scale-95 transition px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1.5 shadow-sm text-white">
           <i data-lucide="refresh-cw" class="w-4 h-4"></i>
           Aggiorna
         </button>
@@ -59,35 +75,35 @@
     </header>
 
     <!-- Statistiche Rapide -->
-    <div id="stats-container" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+    <div id="stats-container" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3 sm:p-4">
         <p id="stat-label-1" class="text-xs text-slate-400 font-medium">Totale Record Letti</p>
-        <p id="stat-val-1" class="text-2xl font-bold mt-1 text-white">0</p>
+        <p id="stat-val-1" class="text-xl sm:text-2xl font-bold mt-1 text-white">0</p>
       </div>
-      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3 sm:p-4">
         <p id="stat-label-2" class="text-xs text-slate-400 font-medium">Scadenza 1 Giorno</p>
-        <p id="stat-val-2" class="text-2xl font-bold mt-1 text-red-400">0</p>
+        <p id="stat-val-2" class="text-xl sm:text-2xl font-bold mt-1 text-red-400">0</p>
       </div>
-      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3 sm:p-4">
         <p id="stat-label-3" class="text-xs text-slate-400 font-medium">TERM ELAPSED</p>
-        <p id="stat-val-3" class="text-2xl font-bold mt-1 text-amber-400">0</p>
+        <p id="stat-val-3" class="text-xl sm:text-2xl font-bold mt-1 text-amber-400">0</p>
       </div>
-      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3 sm:p-4">
         <p id="stat-label-4" class="text-xs text-slate-400 font-medium">Aggiornamenti Riusciti</p>
-        <p id="stat-val-4" class="text-2xl font-bold mt-1 text-emerald-400">0</p>
+        <p id="stat-val-4" class="text-xl sm:text-2xl font-bold mt-1 text-emerald-400">0</p>
       </div>
     </div>
 
     <!-- Barra Filtri Principale -->
-    <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-4 space-y-4">
-      <div class="flex flex-wrap gap-4 items-center">
+    <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-3.5 sm:p-4 space-y-4">
+      <div class="flex flex-wrap gap-3 sm:gap-4 items-center">
         <div class="flex-1 min-w-[200px]">
           <label class="block text-xs font-medium text-slate-400 mb-1">Cerca nel testo</label>
-          <input type="text" id="filter-search" placeholder="Cerca veicolo, id, messaggio..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+          <input type="text" id="filter-search" placeholder="Cerca veicolo, id, messaggio..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
         </div>
 
         <!-- Calendario Flatpickr (solo vista Log) -->
-        <div id="container-calendar" class="w-52">
+        <div id="container-calendar" class="w-full sm:w-48">
           <div class="flex items-center justify-between mb-1">
             <label class="block text-xs font-medium text-slate-400">Calendario</label>
             <button id="btn-clear-date" type="button" class="text-[10px] text-blue-400 hover:underline">Azzera</button>
@@ -98,7 +114,7 @@
               id="filter-calendar" 
               placeholder="Seleziona data..." 
               readonly
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-sm text-slate-200 cursor-pointer focus:outline-none focus:border-blue-500"
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs sm:text-sm text-slate-200 cursor-pointer focus:outline-none focus:border-blue-500"
             >
             <i data-lucide="calendar" class="w-4 h-4 text-slate-400 absolute left-2.5 pointer-events-none"></i>
           </div>
@@ -107,7 +123,7 @@
         <!-- Filtro Modo Elaborazione (solo vista Log) -->
         <div id="container-mode" class="w-36">
           <label class="block text-xs font-medium text-slate-400 mb-1">Modo Elaborazione</label>
-          <select id="filter-mode" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+          <select id="filter-mode" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="ALL">Tutti</option>
             <option value="ENABLED">ENABLED</option>
             <option value="DISABLED">DISABLED</option>
@@ -118,7 +134,7 @@
         <!-- Filtro Canale (solo vista Veicoli) -->
         <div id="container-channel" class="w-36 hidden">
           <label class="block text-xs font-medium text-slate-400 mb-1">Filtro Canale</label>
-          <select id="filter-channel" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+          <select id="filter-channel" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="ALL">Tutti i canali</option>
             <option value="subito">Subito.it</option>
             <option value="autoscout">AutoScout24</option>
@@ -128,7 +144,7 @@
         <!-- Filtro Livello (solo vista Log) -->
         <div id="container-level" class="w-32">
           <label class="block text-xs font-medium text-slate-400 mb-1">Livello</label>
-          <select id="filter-level" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+          <select id="filter-level" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="ALL">Tutti</option>
             <option value="INFO">INFO</option>
             <option value="WARNING">WARNING</option>
@@ -136,9 +152,9 @@
           </select>
         </div>
 
-        <div class="w-28">
+        <div class="w-24 sm:w-28">
           <label class="block text-xs font-medium text-slate-400 mb-1">Limite</label>
-          <select id="filter-limit" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+          <select id="filter-limit" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="50">50</option>
             <option value="100" selected>100</option>
             <option value="200">200</option>
@@ -204,7 +220,7 @@
       </div>
     </div>
 
-    <!-- Contenitore Tabella Dati -->
+    <!-- Contenitore Tabella Dati (Stile Standard mantenuto, ottimizzato per larghezze) -->
     <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg">
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm border-collapse">
@@ -218,6 +234,12 @@
           </tbody>
         </table>
       </div>
+    </div>
+
+    <!-- Contatore Record -->
+    <div class="flex items-center justify-between text-xs text-slate-400 px-1 pt-0.5">
+      <span id="records-counter">Record caricati: 0</span>
+      <span class="text-[11px] text-slate-400 hidden sm:inline">Suggerimento: tocca le descrizioni per espanderle</span>
     </div>
 
   </div>
@@ -367,6 +389,27 @@
       return `<span class="text-slate-500 text-[10px]">-</span>`;
     }
 
+    // Funzione globale per espandere/collassare il testo con clamp
+    window.toggleExpandText = function(btn) {
+      const container = btn.closest('.expandable-cell');
+      if (!container) return;
+      const textEl = container.querySelector('.expandable-text');
+      const labelEl = container.querySelector('.toggle-label');
+      const iconEl = container.querySelector('.toggle-icon');
+
+      if (textEl.classList.contains('clamp-text')) {
+        textEl.classList.remove('clamp-text');
+        textEl.classList.add('expanded-text');
+        if (labelEl) labelEl.textContent = 'Meno';
+        if (iconEl) iconEl.style.transform = 'rotate(180deg)';
+      } else {
+        textEl.classList.remove('expanded-text');
+        textEl.classList.add('clamp-text');
+        if (labelEl) labelEl.textContent = 'Altro';
+        if (iconEl) iconEl.style.transform = 'rotate(0deg)';
+      }
+    };
+
     async function fetchData() {
       const limit = parseInt(document.getElementById("filter-limit").value, 10);
       const statusEl = document.getElementById("sync-status");
@@ -439,6 +482,7 @@
 
     function applyFilters() {
       const searchTerm = document.getElementById("filter-search").value.toLowerCase();
+      const counterEl = document.getElementById("records-counter");
 
       if (currentView === "logs") {
         const filterLevel = document.getElementById("filter-level").value;
@@ -474,6 +518,7 @@
           return matchesLevel && matchesMode && matchesEvent && matchesDate && matchesSearch;
         });
 
+        if (counterEl) counterEl.innerText = `Record mostrati: ${filtered.length} di ${logsCache.length}`;
         renderLogsTable(filtered);
       } else {
         const filterChannel = document.getElementById("filter-channel").value;
@@ -489,6 +534,7 @@
           return matchesSearch && matchesChannel;
         });
 
+        if (counterEl) counterEl.innerText = `Record mostrati: ${filtered.length} di ${vehiclesCache.length}`;
         renderVehiclesTable(filtered);
       }
     }
@@ -497,12 +543,12 @@
       const thead = document.getElementById("table-thead");
       thead.innerHTML = `
         <tr>
-          <th class="py-3 px-4">Timestamp</th>
-          <th class="py-3 px-4">Modo</th>
-          <th class="py-3 px-4">Livello</th>
-          <th class="py-3 px-4">Tipo Evento</th>
-          <th class="py-3 px-4">Veicolo / ID</th>
-          <th class="py-3 px-4">Messaggio</th>
+          <th class="py-3 px-3 sm:px-4">Timestamp</th>
+          <th class="py-3 px-3 sm:px-4">Modo</th>
+          <th class="py-3 px-3 sm:px-4">Livello</th>
+          <th class="py-3 px-3 sm:px-4">Tipo Evento</th>
+          <th class="py-3 px-3 sm:px-4">Veicolo / ID</th>
+          <th class="py-3 px-3 sm:px-4 min-w-[200px] max-w-[320px] sm:max-w-md">Messaggio</th>
         </tr>
       `;
 
@@ -525,34 +571,49 @@
           rowClass = "bg-sky-950/20 border-l-2 border-l-sky-500/40 hover:bg-sky-900/30 transition";
         }
 
+        const msg = row.message || "-";
+        const isLongMsg = msg.length > 75;
+
         return `
           <tr class="${rowClass}">
-            <td class="py-2.5 px-4 whitespace-nowrap text-slate-400 font-mono">${formatDate(row.log_time)}</td>
-            <td class="py-2.5 px-4 whitespace-nowrap">${renderBadgeMode(row.execution_mode)}</td>
-            <td class="py-2.5 px-4 whitespace-nowrap">${renderBadgeLevel(row.level)}</td>
-            <td class="py-2.5 px-4 whitespace-nowrap">${renderBadgeEvent(row.event_type, isWarning1D)}</td>
-            <td class="py-2.5 px-4 whitespace-nowrap font-sans">${vehicle}</td>
-            <td class="py-2.5 px-4 break-words font-sans text-slate-300">
-              ${row.message}
+            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap text-slate-400 font-mono text-[11px] sm:text-xs">${formatDate(row.log_time)}</td>
+            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeMode(row.execution_mode)}</td>
+            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeLevel(row.level)}</td>
+            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeEvent(row.event_type, isWarning1D)}</td>
+            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap font-sans text-xs">${vehicle}</td>
+            <td class="py-2 px-3 sm:px-4 min-w-[200px] max-w-[280px] sm:max-w-md">
+              <div class="expandable-cell text-slate-300 font-sans text-xs">
+                <div class="expandable-text clamp-text leading-snug cursor-pointer select-text" onclick="toggleExpandText(this)">
+                  ${msg}
+                </div>
+                ${isLongMsg ? `
+                  <button type="button" onclick="toggleExpandText(this)" class="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition focus:outline-none">
+                    <span class="toggle-label">Altro</span>
+                    <i data-lucide="chevron-down" class="toggle-icon w-3 h-3 transition-transform"></i>
+                  </button>
+                ` : ''}
+              </div>
             </td>
           </tr>
         `;
       }).join("");
+
+      lucide.createIcons();
     }
 
     function renderVehiclesTable(vehicles) {
       const thead = document.getElementById("table-thead");
       thead.innerHTML = `
         <tr>
-          <th class="py-3 px-4">ID</th>
-          <th class="py-3 px-4">Modello / Veicolo</th>
-          <th class="py-3 px-4">Canale (Flag)</th>
-          <th class="py-3 px-4">Stato Subito</th>
-          <th class="py-3 px-4">Pubbl. Subito</th>
-          <th class="py-3 px-4">Disattivazione Subito</th>
-          <th class="py-3 px-4">Stato AutoScout</th>
-          <th class="py-3 px-4">Pubbl. AutoScout</th>
-          <th class="py-3 px-4">Disattivazione AutoScout</th>
+          <th class="py-3 px-3 sm:px-4">ID</th>
+          <th class="py-3 px-3 sm:px-4 min-w-[180px] max-w-[260px] sm:max-w-sm">Modello / Veicolo</th>
+          <th class="py-3 px-3 sm:px-4">Canale (Flag)</th>
+          <th class="py-3 px-3 sm:px-4">Stato Subito</th>
+          <th class="py-3 px-3 sm:px-4">Pubbl. Subito</th>
+          <th class="py-3 px-3 sm:px-4">Disattivazione Subito</th>
+          <th class="py-3 px-3 sm:px-4">Stato AutoScout</th>
+          <th class="py-3 px-3 sm:px-4">Pubbl. AutoScout</th>
+          <th class="py-3 px-3 sm:px-4">Disattivazione AutoScout</th>
         </tr>
       `;
 
@@ -563,20 +624,37 @@
       }
 
       tbody.innerHTML = vehicles.map(row => {
+        const desc = row.descrizione || "-";
+        const isLongDesc = desc.length > 50;
+
         return `
           <tr class="hover:bg-slate-800/40 transition">
-            <td class="py-2.5 px-4 font-mono font-bold text-blue-400 whitespace-nowrap">#${row.id}</td>
-            <td class="py-2.5 px-4 font-sans text-slate-200 font-medium whitespace-nowrap">${row.descrizione || "-"}</td>
-            <td class="py-2.5 px-4 font-mono text-xs text-slate-400 whitespace-nowrap">${row.flag || "-"}</td>
-            <td class="py-2.5 px-4 whitespace-nowrap">${renderStatusPill(row.status_subito)}</td>
-            <td class="py-2.5 px-4 whitespace-nowrap text-slate-300 font-mono text-xs">${formatDate(row.data_p_subito)}</td>
-            <td class="py-2.5 px-4 whitespace-nowrap text-rose-300 font-mono text-xs">${formatDate(row.data_disattivazione_subito)}</td>
-            <td class="py-2.5 px-4 whitespace-nowrap">${renderStatusPill(row.status_autoscout)}</td>
-            <td class="py-2.5 px-4 whitespace-nowrap text-slate-300 font-mono text-xs">${formatDate(row.data_p_autoscout)}</td>
-            <td class="py-2.5 px-4 whitespace-nowrap text-rose-300 font-mono text-xs">${formatDate(row.data_disattivazione_autoscout)}</td>
+            <td class="py-2.5 px-3 sm:px-4 font-mono font-bold text-blue-400 whitespace-nowrap">#${row.id}</td>
+            <td class="py-2 px-3 sm:px-4 min-w-[180px] max-w-[240px] sm:max-w-xs">
+              <div class="expandable-cell text-slate-200 font-sans text-xs">
+                <div class="expandable-text clamp-text font-medium leading-snug cursor-pointer select-text" onclick="toggleExpandText(this)">
+                  ${desc}
+                </div>
+                ${isLongDesc ? `
+                  <button type="button" onclick="toggleExpandText(this)" class="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition focus:outline-none">
+                    <span class="toggle-label">Altro</span>
+                    <i data-lucide="chevron-down" class="toggle-icon w-3 h-3 transition-transform"></i>
+                  </button>
+                ` : ''}
+              </div>
+            </td>
+            <td class="py-2.5 px-3 sm:px-4 font-mono text-xs text-slate-400 whitespace-nowrap">${row.flag || "-"}</td>
+            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderStatusPill(row.status_subito)}</td>
+            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap text-slate-300 font-mono text-xs">${formatDate(row.data_p_subito)}</td>
+            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap text-rose-300 font-mono text-xs">${formatDate(row.data_disattivazione_subito)}</td>
+            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderStatusPill(row.status_autoscout)}</td>
+            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap text-slate-300 font-mono text-xs">${formatDate(row.data_p_autoscout)}</td>
+            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap text-rose-300 font-mono text-xs">${formatDate(row.data_disattivazione_autoscout)}</td>
           </tr>
         `;
       }).join("");
+
+      lucide.createIcons();
     }
 
     // Event Listeners Navigazione
