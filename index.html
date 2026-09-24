@@ -63,12 +63,24 @@
     <!-- Intestazione -->
     <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4 md:pb-5">
       <div>
-        <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          <i data-lucide="activity" class="text-blue-500"></i>
-          Monitor Log API & Flotta
-        </h1>
-        <p class="text-xs sm:text-sm text-slate-400 mt-0.5">
-          Tabella attiva: <code id="active-table-name" class="text-blue-400 font-mono">api_vehicle_logs</code>
+        <div class="flex items-center gap-2.5">
+          <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+            <i data-lucide="activity" class="text-blue-500"></i>
+            Monitor Log API & Flotta
+          </h1>
+          <!-- Badge Versione incrementale discreto -->
+          <span 
+            id="app-version-badge" 
+            title="Versione basata su data/ora rilascio" 
+            class="cursor-default select-none text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-400 border border-slate-700/80 hover:border-slate-600 hover:text-slate-300 transition"
+          >
+            v...
+          </span>
+        </div>
+        <p class="text-xs sm:text-sm text-slate-400 mt-1 flex items-center gap-2">
+          <span>Tabella attiva: <code id="active-table-name" class="text-blue-400 font-mono">api_vehicle_logs</code></span>
+          <span class="text-slate-600">•</span>
+          <span id="app-build-time" class="text-[11px] text-slate-500 font-mono">Build: ...</span>
         </p>
       </div>
 
@@ -297,15 +309,46 @@
       </div>
     </div>
 
-    <!-- Contatore Record -->
-    <div class="flex items-center justify-between text-xs text-slate-400 px-1 pt-0.5">
+    <!-- Contatore Record e Note di Piè di Pagina -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400 px-1 pt-1 border-t border-slate-800/60">
       <span id="records-counter">Record caricati: 0</span>
-      <span id="hint-text" class="text-[11px] text-slate-400 hidden sm:inline">Suggerimento: tocca le descrizioni per espanderle</span>
+      <div class="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
+        <span id="hint-text" class="hidden sm:inline font-sans text-slate-400">Suggerimento: tocca le descrizioni per espanderle</span>
+        <span class="hidden sm:inline text-slate-700">|</span>
+        <span id="footer-version-tag">Dashboard Release: --</span>
+      </div>
     </div>
 
   </div>
 
   <script>
+    // Configurazione Versione incrementale basata su data e ora di rilascio
+    const APP_CONFIG = {
+      // Formato standard incrementale: Anno.Mese.Giorno-OraMinuti
+      buildDate: "2026-09-24T18:35:00",
+      versionLabel: "v2026.09.24-1835"
+    };
+
+    function initVersionInfo() {
+      const badgeEl = document.getElementById("app-version-badge");
+      const buildTimeEl = document.getElementById("app-build-time");
+      const footerTagEl = document.getElementById("footer-version-tag");
+
+      const bDate = new Date(APP_CONFIG.buildDate);
+      const formattedBuild = `${bDate.toLocaleDateString('it-IT')} ${bDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+
+      if (badgeEl) {
+        badgeEl.innerText = APP_CONFIG.versionLabel;
+        badgeEl.setAttribute("title", `Rilasciata il ${formattedBuild}`);
+      }
+      if (buildTimeEl) {
+        buildTimeEl.innerText = `Aggiornata: ${formattedBuild}`;
+      }
+      if (footerTagEl) {
+        footerTagEl.innerText = `${APP_CONFIG.versionLabel} (${formattedBuild})`;
+      }
+    }
+
     const SUPABASE_URL = "https://vcekmiomodmgwashgegx.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjZWttaW9tb2RtZ3dhc2hnZWd4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTcyMTIzOSwiZXhwIjoyMTA1Mjk3MjM5fQ.cBIBLXTQfBiGCYLap4EHHA3fUSCIfyeIzvXdKE6nCkM";
 
@@ -1100,6 +1143,8 @@
       applyFilters();
     });
 
+    // Inizializza Versioning e Icone
+    initVersionInfo();
     lucide.createIcons();
     fetchData();
   </script>
