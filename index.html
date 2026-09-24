@@ -19,7 +19,6 @@
   <script src="https://npmcdn.com/flatpickr/dist/l10n/it.js"></script>
 
   <style>
-    /* Troncamento a 2 righe con transizione fluida */
     .clamp-text {
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -31,6 +30,25 @@
       display: block;
       word-break: break-word;
       white-space: normal;
+    }
+
+    /* Scrollbar sottile e integrata per le colonne delle schede */
+    .custom-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: rgba(100, 116, 139, 0.35);
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background-color: rgba(148, 163, 184, 0.6);
     }
   </style>
 </head>
@@ -60,6 +78,10 @@
           <button id="btn-view-vehicles" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition text-slate-400 hover:text-white">
             <i data-lucide="car" class="w-3.5 h-3.5"></i>
             Tabella Veicoli
+          </button>
+          <button id="btn-view-schedule" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition text-slate-400 hover:text-white">
+            <i data-lucide="calendar-clock" class="w-3.5 h-3.5"></i>
+            Piano Pubblicazioni
           </button>
         </div>
 
@@ -95,11 +117,24 @@
     </div>
 
     <!-- Barra Filtri Principale -->
-    <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-3.5 sm:p-4 space-y-4">
+    <div id="filters-container" class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-3.5 sm:p-4 space-y-4">
       <div class="flex flex-wrap gap-3 sm:gap-4 items-center">
+        
+        <!-- Cerca nel testo -->
         <div class="flex-1 min-w-[200px]">
           <label class="block text-xs font-medium text-slate-400 mb-1">Cerca nel testo</label>
           <input type="text" id="filter-search" placeholder="Cerca veicolo, id, messaggio..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+        </div>
+
+        <!-- Selettore Sessione di Elaborazione (visibile solo in vista Piano Pubblicazioni) -->
+        <div id="container-session" class="w-full sm:w-64 hidden">
+          <label class="block text-xs font-medium text-blue-400 mb-1 flex items-center gap-1.5">
+            <i data-lucide="history" class="w-3.5 h-3.5"></i>
+            Sessione Elaborazione
+          </label>
+          <select id="filter-session" class="w-full bg-slate-900 border border-blue-500/50 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-blue-200 focus:outline-none focus:border-blue-400 font-mono">
+            <option value="0">Caricamento sessioni...</option>
+          </select>
         </div>
 
         <!-- Calendario Flatpickr (solo vista Log) -->
@@ -152,13 +187,14 @@
           </select>
         </div>
 
-        <div class="w-24 sm:w-28">
+        <div id="container-limit" class="w-24 sm:w-28">
           <label class="block text-xs font-medium text-slate-400 mb-1">Limite</label>
           <select id="filter-limit" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="50">50</option>
             <option value="100" selected>100</option>
             <option value="200">200</option>
             <option value="500">500</option>
+            <option value="1000">1000</option>
           </select>
         </div>
       </div>
@@ -220,13 +256,11 @@
       </div>
     </div>
 
-    <!-- Contenitore Tabella Dati (Stile Standard mantenuto, ottimizzato per larghezze) -->
-    <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg">
+    <!-- Contenitore Tabella Dati (Log e Veicoli) -->
+    <div id="table-wrapper" class="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg">
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm border-collapse">
-          <thead id="table-thead" class="bg-slate-950 text-slate-400 uppercase text-[11px] font-semibold tracking-wider border-b border-slate-800">
-            <!-- Intestazioni generate dinamicamente in JS -->
-          </thead>
+          <thead id="table-thead" class="bg-slate-950 text-slate-400 uppercase text-[11px] font-semibold tracking-wider border-b border-slate-800"></thead>
           <tbody id="table-tbody" class="divide-y divide-slate-800/60 font-mono text-xs">
             <tr>
               <td colspan="7" class="text-center py-8 text-slate-500">Caricamento in corso...</td>
@@ -236,10 +270,33 @@
       </div>
     </div>
 
+    <!-- Contenitore Vista Calendario Settimanale -->
+    <div id="schedule-wrapper" class="hidden space-y-4">
+      <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+            <i data-lucide="clock" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h2 class="text-sm font-semibold text-white">Sessione di elaborazione selezionata</h2>
+            <p id="schedule-last-run-info" class="text-xs text-slate-400 font-mono mt-0.5">Calcolo in corso...</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-slate-400 font-medium bg-slate-900/60 px-3 py-2 rounded-lg border border-slate-800">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          Previsioni calcolate esclusivamente sui record della sessione scelta
+        </div>
+      </div>
+
+      <div id="schedule-days-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">
+        <!-- Generato dinamicamente -->
+      </div>
+    </div>
+
     <!-- Contatore Record -->
     <div class="flex items-center justify-between text-xs text-slate-400 px-1 pt-0.5">
       <span id="records-counter">Record caricati: 0</span>
-      <span class="text-[11px] text-slate-400 hidden sm:inline">Suggerimento: tocca le descrizioni per espanderle</span>
+      <span id="hint-text" class="text-[11px] text-slate-400 hidden sm:inline">Suggerimento: tocca le descrizioni per espanderle</span>
     </div>
 
   </div>
@@ -250,9 +307,11 @@
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentView = "logs"; // "logs" oppure "vehicles"
+    let currentView = "logs"; // "logs", "vehicles" o "schedule"
     let logsCache = [];
     let vehiclesCache = [];
+    let detectedSessions = []; // Elenco sessioni raggruppate
+    let selectedSessionIndex = 0; // Default: la più recente
     let selectedCalendarDate = "";
 
     const calendarPicker = flatpickr("#filter-calendar", {
@@ -267,48 +326,182 @@
       }
     });
 
+    function detectChannel(rowOrText) {
+      let str = "";
+      if (typeof rowOrText === "string") {
+        str = rowOrText.toLowerCase();
+      } else if (rowOrText && typeof rowOrText === "object") {
+        const msg = rowOrText.message || "";
+        const flag = rowOrText.flag || "";
+        const meta = rowOrText.raw_metadata ? JSON.stringify(rowOrText.raw_metadata) : "";
+        str = `${msg} ${flag} ${meta}`.toLowerCase();
+      }
+
+      if (str.includes("subito")) return "subito";
+      if (str.includes("autoscout") || str.includes("as24") || str.includes("auto scout")) return "autoscout";
+      return "generico";
+    }
+
+    function identifySessions(logs) {
+      if (!logs || logs.length === 0) return [];
+      const sessions = [];
+      const MAX_GAP_BETWEEN_LOGS_MS = 90 * 1000;
+      const MAX_BATCH_SPAN_MS = 6 * 60 * 1000;
+
+      let currentSession = null;
+
+      for (let i = 0; i < logs.length; i++) {
+        const row = logs[i];
+        const rowTime = new Date(row.log_time).getTime();
+
+        if (!currentSession) {
+          currentSession = {
+            startTime: rowTime,
+            latestTime: rowTime,
+            latestLog: row,
+            logs: [row]
+          };
+        } else {
+          const gap = currentSession.startTime - rowTime;
+          const totalSpan = currentSession.latestTime - rowTime;
+
+          if (gap > MAX_GAP_BETWEEN_LOGS_MS || totalSpan > MAX_BATCH_SPAN_MS) {
+            sessions.push(currentSession);
+            currentSession = {
+              startTime: rowTime,
+              latestTime: rowTime,
+              latestLog: row,
+              logs: [row]
+            };
+          } else {
+            currentSession.logs.push(row);
+            currentSession.startTime = rowTime;
+
+            if (row.event_type === "JOB_START") {
+              sessions.push(currentSession);
+              currentSession = null;
+            }
+          }
+        }
+      }
+
+      if (currentSession && currentSession.logs.length > 0) {
+        sessions.push(currentSession);
+      }
+
+      return sessions;
+    }
+
+    function populateSessionsDropdown() {
+      const selectEl = document.getElementById("filter-session");
+      if (!selectEl) return;
+
+      if (detectedSessions.length === 0) {
+        selectEl.innerHTML = `<option value="0">Nessuna sessione trovata</option>`;
+        return;
+      }
+
+      selectEl.innerHTML = detectedSessions.map((session, idx) => {
+        const timeFormatted = formatDate(session.latestLog.log_time);
+        const count = session.logs.length;
+        const mode = session.latestLog.execution_mode ? `[${session.latestLog.execution_mode}]` : "";
+        const label = idx === 0 
+          ? `⭐ Ultima: ${timeFormatted} (${count} log) ${mode}`
+          : `${timeFormatted} (${count} log) ${mode}`;
+        
+        return `<option value="${idx}" ${idx === selectedSessionIndex ? "selected" : ""}>${label}</option>`;
+      }).join("");
+    }
+
     function setView(view) {
       currentView = view;
       const btnLogs = document.getElementById("btn-view-logs");
       const btnVehicles = document.getElementById("btn-view-vehicles");
+      const btnSchedule = document.getElementById("btn-view-schedule");
       const activeTableName = document.getElementById("active-table-name");
 
       const containerCal = document.getElementById("container-calendar");
       const containerMode = document.getElementById("container-mode");
       const containerLevel = document.getElementById("container-level");
       const containerChannel = document.getElementById("container-channel");
+      const containerSession = document.getElementById("container-session");
       const containerEvents = document.getElementById("container-events-filter");
+      const containerLimit = document.getElementById("container-limit");
+      const tableWrapper = document.getElementById("table-wrapper");
+      const scheduleWrapper = document.getElementById("schedule-wrapper");
+      const hintText = document.getElementById("hint-text");
+
+      const normalClass = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition text-slate-400 hover:text-white";
+      const activeClass = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition bg-blue-600 text-white shadow";
+
+      btnLogs.className = normalClass;
+      btnVehicles.className = normalClass;
+      btnSchedule.className = normalClass;
 
       if (view === "logs") {
-        btnLogs.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition bg-blue-600 text-white shadow";
-        btnVehicles.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition text-slate-400 hover:text-white";
+        btnLogs.className = activeClass;
         activeTableName.innerText = "api_vehicle_logs";
 
+        tableWrapper.classList.remove("hidden");
+        scheduleWrapper.classList.add("hidden");
         containerCal.classList.remove("hidden");
         containerMode.classList.remove("hidden");
         containerLevel.classList.remove("hidden");
         containerChannel.classList.add("hidden");
+        containerSession.classList.add("hidden");
         containerEvents.classList.remove("hidden");
-      } else {
-        btnVehicles.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition bg-blue-600 text-white shadow";
-        btnLogs.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition text-slate-400 hover:text-white";
+        containerLimit.classList.remove("hidden");
+        hintText.innerText = "Suggerimento: tocca le descrizioni per espanderle";
+        applyFilters();
+      } else if (view === "vehicles") {
+        btnVehicles.className = activeClass;
         activeTableName.innerText = "operazioni_veicoli";
 
+        tableWrapper.classList.remove("hidden");
+        scheduleWrapper.classList.add("hidden");
         containerCal.classList.add("hidden");
         containerMode.classList.add("hidden");
         containerLevel.classList.add("hidden");
         containerChannel.classList.remove("hidden");
+        containerSession.classList.add("hidden");
         containerEvents.classList.add("hidden");
-      }
+        containerLimit.classList.remove("hidden");
+        hintText.innerText = "Suggerimento: tocca le descrizioni per espanderle";
+        if (vehiclesCache.length === 0) fetchData();
+        else applyFilters();
+      } else if (view === "schedule") {
+        btnSchedule.className = activeClass;
+        activeTableName.innerText = "api_vehicle_logs [Previsioni]";
 
-      fetchData();
+        tableWrapper.classList.add("hidden");
+        scheduleWrapper.classList.remove("hidden");
+        containerCal.classList.add("hidden");
+        containerMode.classList.add("hidden");
+        containerLevel.classList.add("hidden");
+        containerChannel.classList.add("hidden");
+        containerSession.classList.remove("hidden");
+        containerEvents.classList.add("hidden");
+        containerLimit.classList.remove("hidden");
+        hintText.innerText = "Seleziona dal menu in alto la data/ora della sessione batch da analizzare";
+
+        if (logsCache.length === 0) fetchData();
+        else renderScheduleView();
+      }
     }
 
     function isOneDayRecord(row) {
       if (row.event_type === "EXPIRY_WARNING_1D") return true;
       const msg = row.message || "";
-      const textMatch = /\btrigger\s+tra\s+1\s*(gg|giorno|day)\b/i.test(msg);
-      return Boolean(textMatch);
+      return Boolean(/\btrigger\s+tra\s+1\s*(gg|giorno|day)\b/i.test(msg));
+    }
+
+    function extractTriggerDays(message) {
+      if (!message) return null;
+      const match = message.match(/(?:trigger\s+tra|tra)\s+(\d+)\s*(?:gg|giorn[oi]|day[s]?)/i);
+      if (match && match[1]) {
+        return parseInt(match[1], 10);
+      }
+      return null;
     }
 
     function isTestRecord(row) {
@@ -379,13 +572,12 @@
         badgeHtml = `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans ${c}">${evt}</span>`;
       }
 
-      // Riconoscimento presenza Subito o AutoScout nel messaggio
-      const msgLower = (message || "").toLowerCase();
+      const ch = detectChannel(message);
       let iconHtml = "";
 
-      if (msgLower.includes("subito")) {
+      if (ch === "subito") {
         iconHtml = `<img src="SubitoICO.png" alt="Subito" title="Subito" class="w-4 h-4 rounded-full object-contain shrink-0 shadow-sm" />`;
-      } else if (msgLower.includes("autoscout")) {
+      } else if (ch === "autoscout") {
         iconHtml = `<img src="AS24Ico.png" alt="AutoScout24" title="AutoScout24" class="w-4 h-4 rounded-full object-contain shrink-0 shadow-sm" />`;
       }
 
@@ -406,7 +598,6 @@
       return `<span class="text-slate-500 text-[10px]">-</span>`;
     }
 
-    // Funzione globale per espandere/collassare il testo con clamp
     window.toggleExpandText = function(btn) {
       const container = btn.closest('.expandable-cell');
       if (!container) return;
@@ -433,7 +624,7 @@
       statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-spin"></span> Caricamento...`;
 
       try {
-        if (currentView === "logs") {
+        if (currentView === "logs" || currentView === "schedule") {
           let query = supabaseClient
             .from("api_vehicle_logs")
             .select("*")
@@ -443,6 +634,12 @@
           const { data, error } = await query;
           if (error) throw error;
           logsCache = data || [];
+
+          detectedSessions = identifySessions(logsCache);
+          if (selectedSessionIndex >= detectedSessions.length) {
+            selectedSessionIndex = 0;
+          }
+          populateSessionsDropdown();
         } else {
           let query = supabaseClient
             .from("operazioni_veicoli")
@@ -456,7 +653,12 @@
         }
 
         updateStats();
-        applyFilters();
+
+        if (currentView === "schedule") {
+          renderScheduleView();
+        } else {
+          applyFilters();
+        }
 
         statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Aggiornato: ${new Date().toLocaleTimeString()}`;
       } catch (err) {
@@ -466,7 +668,7 @@
     }
 
     function updateStats() {
-      if (currentView === "logs") {
+      if (currentView === "logs" || currentView === "schedule") {
         document.getElementById("stat-label-1").innerText = "Totale Record Letti";
         document.getElementById("stat-val-1").innerText = logsCache.length;
 
@@ -498,6 +700,11 @@
     }
 
     function applyFilters() {
+      if (currentView === "schedule") {
+        renderScheduleView();
+        return;
+      }
+
       const searchTerm = document.getElementById("filter-search").value.toLowerCase();
       const counterEl = document.getElementById("records-counter");
 
@@ -674,9 +881,179 @@
       lucide.createIcons();
     }
 
+    // Costruzione della Vista Calendario Settimanale
+    function renderScheduleView() {
+      const searchTerm = document.getElementById("filter-search").value.toLowerCase();
+      const lastRunInfoEl = document.getElementById("schedule-last-run-info");
+      const gridContainer = document.getElementById("schedule-days-grid");
+      const counterEl = document.getElementById("records-counter");
+
+      if (logsCache.length === 0 || detectedSessions.length === 0) {
+        lastRunInfoEl.innerText = "Nessun dato log disponibile.";
+        gridContainer.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500">Nessuna informazione temporale trovata.</div>`;
+        return;
+      }
+
+      const activeSession = detectedSessions[selectedSessionIndex] || detectedSessions[0];
+      const targetLog = activeSession.latestLog;
+      const baseDate = new Date(targetLog.log_time);
+      const currentBatchLogs = activeSession.logs;
+
+      lastRunInfoEl.innerText = `Data/Ora base: ${formatDate(targetLog.log_time)} (Modalità: ${targetLog.execution_mode || "N/D"} - ${currentBatchLogs.length} record in sessione)`;
+
+      // Inizializza i bucket
+      const daysBuckets = [
+        { label: "Oggi (TERM ELAPSED)", offset: 0, items: [] },
+        { label: "Domani", offset: 1, items: [] },
+        { label: "Tra 2 Giorni", offset: 2, items: [] },
+        { label: "Tra 3 Giorni", offset: 3, items: [] },
+        { label: "Tra 4 Giorni", offset: 4, items: [] },
+        { label: "Tra 5 Giorni", offset: 5, items: [] },
+        { label: "Tra 6 Giorni", offset: 6, items: [] },
+        { label: "7+ Giorni / Altro", offset: 7, items: [] }
+      ];
+
+      daysBuckets.forEach(b => {
+        if (b.offset < 7) {
+          const target = new Date(baseDate);
+          target.setDate(target.getDate() + b.offset);
+          b.dateStr = target.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: '2-digit' });
+        } else {
+          b.dateStr = "A seguire";
+        }
+      });
+
+      const seenKey = new Set();
+      let totalFound = 0;
+
+      currentBatchLogs.forEach(row => {
+        const msg = row.message || "";
+        const msgLower = msg.toLowerCase();
+        const rowChannel = detectChannel(row);
+
+        let days = extractTriggerDays(msg);
+
+        // Controllo prioritario per TERM ELAPSED (Oggi / 0 giorni)
+        const isTermElapsed = row.event_type === "EXPIRY_TRIGGER" || /\bterm\s+elapsed\b/i.test(msg);
+
+        if (isTermElapsed) {
+          days = 0;
+        } else if (days === null && isOneDayRecord(row)) {
+          days = 1;
+        }
+
+        if (days !== null) {
+          const vehicle = row.vehicle_model || (row.vehicle_id ? `ID #${row.vehicle_id}` : "Veicolo non specificato");
+          
+          if (searchTerm && !msgLower.includes(searchTerm) && !vehicle.toLowerCase().includes(searchTerm)) {
+            return;
+          }
+
+          const uniqueKey = `${row.vehicle_id || vehicle}-${rowChannel}`;
+          if (seenKey.has(uniqueKey)) return;
+          seenKey.add(uniqueKey);
+
+          totalFound++;
+
+          const itemData = {
+            vehicle: vehicle,
+            vehicleId: row.vehicle_id,
+            channel: rowChannel,
+            message: msg,
+            days: days,
+            mode: row.execution_mode,
+            isTermElapsed: isTermElapsed
+          };
+
+          if (days >= 0 && days < 7) {
+            daysBuckets[days].items.push(itemData);
+          } else if (days >= 7) {
+            daysBuckets[7].items.push(itemData);
+          }
+        }
+      });
+
+      if (counterEl) counterEl.innerText = `Veicoli pianificati nella sessione: ${totalFound}`;
+
+      gridContainer.innerHTML = daysBuckets.map((bucket, idx) => {
+        const isToday = idx === 0;
+        const isTomorrow = idx === 1;
+
+        let colBorder = "border-slate-800 bg-slate-900/60";
+        let headerColor = "text-slate-300";
+        let badgeHeader = "bg-slate-800 text-slate-400";
+
+        if (isToday) {
+          colBorder = "border-amber-500/40 bg-amber-950/15";
+          headerColor = "text-amber-400 font-bold";
+          badgeHeader = "bg-amber-500/20 text-amber-300 border border-amber-500/30";
+        } else if (isTomorrow) {
+          colBorder = "border-red-500/30 bg-red-950/10";
+          headerColor = "text-red-400 font-bold";
+          badgeHeader = "bg-red-500/20 text-red-300 border border-red-500/30";
+        }
+
+        const itemsHtml = bucket.items.length === 0 
+          ? `<div class="p-3 text-center text-xs text-slate-600 italic">Nessun evento</div>`
+          : bucket.items.map(item => {
+              let iconImg = "";
+              if (item.channel === "subito") {
+                iconImg = `<img src="SubitoICO.png" alt="Subito" title="Subito" class="w-4 h-4 rounded-full object-contain shrink-0 shadow-sm" />`;
+              } else if (item.channel === "autoscout") {
+                iconImg = `<img src="AS24Ico.png" alt="AutoScout24" title="AutoScout24" class="w-4 h-4 rounded-full object-contain shrink-0 shadow-sm" />`;
+              } else {
+                iconImg = `<i data-lucide="share-2" class="w-3.5 h-3.5 text-slate-500 shrink-0"></i>`;
+              }
+
+              const triggerLabel = item.isTermElapsed || item.days === 0
+                ? `<span class="text-amber-400 font-semibold uppercase tracking-wider">TERM ELAPSED</span>`
+                : `<span class="text-blue-400 font-medium">Trigger tra ${item.days} gg</span>`;
+
+              return `
+                <div class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/70 hover:border-slate-600 rounded-lg p-2.5 transition flex flex-col gap-1.5 shadow-sm">
+                  <div class="flex items-center justify-between gap-1.5">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      ${iconImg}
+                      <span class="text-xs font-semibold text-slate-200 truncate" title="${item.vehicle}">${item.vehicle}</span>
+                    </div>
+                    ${item.vehicleId ? `<span class="text-[10px] font-mono text-slate-400">#${item.vehicleId}</span>` : ''}
+                  </div>
+                  <p class="text-[11px] text-slate-400 font-sans leading-tight line-clamp-2" title="${item.message}">
+                    ${item.message}
+                  </p>
+                  <div class="flex items-center justify-between pt-1 border-t border-slate-700/50 mt-0.5 text-[10px]">
+                    ${triggerLabel}
+                    <span class="text-slate-500 font-mono">${item.mode || ''}</span>
+                  </div>
+                </div>
+              `;
+            }).join("");
+
+        return `
+          <div class="rounded-xl border ${colBorder} flex flex-col overflow-hidden">
+            <div class="px-3.5 py-2.5 border-b border-slate-800 flex items-center justify-between">
+              <div>
+                <h3 class="text-xs ${headerColor} uppercase tracking-wider">${bucket.label}</h3>
+                <span class="text-[11px] text-slate-400 font-mono">${bucket.dateStr}</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeHeader}">
+                ${bucket.items.length}
+              </span>
+            </div>
+            <div class="p-2.5 pr-1.5 space-y-2 flex-1 max-h-[460px] overflow-y-auto custom-scrollbar">
+              ${itemsHtml}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      lucide.createIcons();
+    }
+
     // Event Listeners Navigazione
     document.getElementById("btn-view-logs").addEventListener("click", () => setView("logs"));
     document.getElementById("btn-view-vehicles").addEventListener("click", () => setView("vehicles"));
+    document.getElementById("btn-view-schedule").addEventListener("click", () => setView("schedule"));
 
     // Event Listeners Filtri & Azioni
     document.getElementById("btn-refresh").addEventListener("click", fetchData);
@@ -690,6 +1067,12 @@
     document.getElementById("filter-mode").addEventListener("change", applyFilters);
     document.getElementById("filter-channel").addEventListener("change", applyFilters);
     document.getElementById("filter-limit").addEventListener("change", fetchData);
+
+    // Event Listener Cambio Sessione Elaborazione
+    document.getElementById("filter-session").addEventListener("change", (e) => {
+      selectedSessionIndex = parseInt(e.target.value, 10) || 0;
+      renderScheduleView();
+    });
 
     document.querySelectorAll(".status-checkbox").forEach(cb => {
       cb.addEventListener("change", applyFilters);
