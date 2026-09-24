@@ -308,7 +308,6 @@
       if (row.event_type === "EXPIRY_WARNING_1D") return true;
       const msg = row.message || "";
       const textMatch = /\btrigger\s+tra\s+1\s*(gg|giorno|day)\b/i.test(msg);
-      //const metaMatch = row.raw_metadata && (row.raw_metadata.days_elapsed === 1 || row.raw_metadata.days_elapsed === "1");
       return Boolean(textMatch);
     }
 
@@ -364,20 +363,38 @@
       return `<span class="px-2 py-0.5 rounded border text-[10px] font-bold ${c}">${level}</span>`;
     }
 
-    function renderBadgeEvent(evt, isWarning1D) {
+    function renderBadgeEvent(evt, isWarning1D, message = "") {
+      let badgeHtml = "";
       if (isWarning1D || evt === "EXPIRY_WARNING_1D") {
-        return `<span class="px-2 py-0.5 rounded border text-[10px] font-medium font-sans bg-red-950/60 text-red-400 border-red-800/80">EXPIRY_WARNING_1D</span>`;
+        badgeHtml = `<span class="px-2 py-0.5 rounded border text-[10px] font-medium font-sans bg-red-950/60 text-red-400 border-red-800/80">EXPIRY_WARNING_1D</span>`;
+      } else if (evt === "EXPIRY_TRIGGER") {
+        badgeHtml = `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans bg-amber-500/10 text-amber-300 border-amber-500/20">TERM ELAPSED</span>`;
+      } else {
+        const colors = {
+          STATE_UPDATE_SUCCESS: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+          SKIPPED_NO_ACTION: "bg-slate-700/30 text-slate-400 border-slate-600/30",
+          REALIGNMENT_REQUIRED: "bg-purple-500/10 text-purple-300 border-purple-500/20"
+        };
+        const c = colors[evt] || "bg-slate-800 text-slate-400 border-slate-700";
+        badgeHtml = `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans ${c}">${evt}</span>`;
       }
-      if (evt === "EXPIRY_TRIGGER") {
-        return `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans bg-amber-500/10 text-amber-300 border-amber-500/20">TERM ELAPSED</span>`;
+
+      // Riconoscimento presenza Subito o AutoScout nel messaggio
+      const msgLower = (message || "").toLowerCase();
+      let iconHtml = "";
+
+      if (msgLower.includes("subito")) {
+        iconHtml = `<img src="SubitoICO.png" alt="Subito" title="Subito" class="w-4 h-4 rounded-full object-contain shrink-0 shadow-sm" />`;
+      } else if (msgLower.includes("autoscout")) {
+        iconHtml = `<img src="AS24Ico.png" alt="AutoScout24" title="AutoScout24" class="w-4 h-4 rounded-full object-contain shrink-0 shadow-sm" />`;
       }
-      const colors = {
-        STATE_UPDATE_SUCCESS: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
-        SKIPPED_NO_ACTION: "bg-slate-700/30 text-slate-400 border-slate-600/30",
-        REALIGNMENT_REQUIRED: "bg-purple-500/10 text-purple-300 border-purple-500/20"
-      };
-      const c = colors[evt] || "bg-slate-800 text-slate-400 border-slate-700";
-      return `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans ${c}">${evt}</span>`;
+
+      return `
+        <div class="inline-flex items-center gap-1.5">
+          ${iconHtml}
+          ${badgeHtml}
+        </div>
+      `;
     }
 
     function renderStatusPill(statusVal) {
@@ -579,7 +596,7 @@
             <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap text-slate-400 font-mono text-[11px] sm:text-xs">${formatDate(row.log_time)}</td>
             <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeMode(row.execution_mode)}</td>
             <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeLevel(row.level)}</td>
-            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeEvent(row.event_type, isWarning1D)}</td>
+            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeEvent(row.event_type, isWarning1D, row.message)}</td>
             <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap font-sans text-xs">${vehicle}</td>
             <td class="py-2 px-3 sm:px-4 min-w-[200px] max-w-[280px] sm:max-w-md">
               <div class="expandable-cell text-slate-300 font-sans text-xs">
