@@ -411,7 +411,7 @@
       // Filtra considerando unicamente i log con execution_mode DISABLE / DISABLED
       const disabledLogs = logs.filter(row => {
         const mode = (row.execution_mode || "").trim().toUpperCase();
-        return mode === "DISABLED" || mode === "DISABLE";
+        return mode === "DISABLED" || mode === "DISABLE" || mode === "TEST";
       });
 
       if (disabledLogs.length === 0) return [];
@@ -705,7 +705,7 @@
 
           // Se siamo nella vista Piano Pubblicazioni, possiamo filtrare direttamente da DB:
           if (currentView === "schedule") {
-            query = query.in("execution_mode", ["DISABLED", "DISABLE"]);
+            query = query.in("execution_mode", ["DISABLED", "DISABLE", "TEST"]);
           }
 
           const { data, error } = await query;
