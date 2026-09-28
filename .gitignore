@@ -1,0 +1,7 @@
+# Ignora file di ambiente e credenziali
+.env
+.env.local
+.env.*.local
+*.env
+.env
+.env.*

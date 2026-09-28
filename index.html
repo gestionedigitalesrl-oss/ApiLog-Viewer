@@ -16,6 +16,9 @@
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+  <!-- Caricamento configurazione esterna -->
+  <script src="config.js"></script>
+  
   <!-- Flatpickr -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
@@ -348,11 +351,24 @@
         footerTagEl.innerText = `${APP_CONFIG.versionLabel} (${formattedBuild})`;
       }
     }
+    
+    // Lettura delle chiavi da config.js (window.ENV) con fallback
+    const env = window.ENV || window.CONFIG || {};
+    const SUPABASE_URL = env.SUPABASE_URL ;
+    const SUPABASE_KEY = env.SUPABASE_KEY ;
 
-    const SUPABASE_URL = "https://vcekmiomodmgwashgegx.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjZWttaW9tb2RtZ3dhc2hnZWd4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTcyMTIzOSwiZXhwIjoyMTA1Mjk3MjM5fQ.cBIBLXTQfBiGCYLap4EHHA3fUSCIfyeIzvXdKE6nCkM";
+    let supabaseClient = null;
 
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      console.error("Configurazione mancante: SUPABASE_URL o SUPABASE_KEY non definite in config.js");
+      const statusEl = document.getElementById("sync-status");
+      if (statusEl) {
+        statusEl.innerHTML = ` Config mancante`;
+      }
+    } else {
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      console.error("Configurazione OK");
+    }
 
     let currentView = "logs"; // "logs", "vehicles" o "schedule"
     let logsCache = [];
