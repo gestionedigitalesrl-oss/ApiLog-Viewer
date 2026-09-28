@@ -328,8 +328,8 @@
     // Configurazione Versione incrementale basata su data e ora di rilascio
     const APP_CONFIG = {
       // Formato standard incrementale: Anno.Mese.Giorno-OraMinuti
-      buildDate: "2026-09-28T11:22:00",
-      versionLabel: "v2026.09.28-1122"
+      buildDate: "2026-09-28T12:00:00",
+      versionLabel: "v2026.09.28-1200"
     };
 
     function initVersionInfo() {
@@ -407,14 +407,23 @@
 
     function identifySessions(logs) {
       if (!logs || logs.length === 0) return [];
+
+      // Filtra considerando unicamente i log con execution_mode DISABLE / DISABLED
+      const disabledLogs = logs.filter(row => {
+        const mode = (row.execution_mode || "").trim().toUpperCase();
+        return mode === "DISABLED" || mode === "DISABLE";
+      });
+
+      if (disabledLogs.length === 0) return [];
+
       const sessions = [];
       const MAX_GAP_BETWEEN_LOGS_MS = 90 * 1000;
       const MAX_BATCH_SPAN_MS = 6 * 60 * 1000;
 
       let currentSession = null;
 
-      for (let i = 0; i < logs.length; i++) {
-        const row = logs[i];
+      for (let i = 0; i < disabledLogs.length; i++) {
+        const row = disabledLogs[i];
         const rowTime = new Date(row.log_time).getTime();
 
         if (!currentSession) {
@@ -681,10 +690,10 @@
       }
     };
 
-    async function fetchData() {
+   async function fetchData() {
       const limit = parseInt(document.getElementById("filter-limit").value, 10);
       const statusEl = document.getElementById("sync-status");
-      statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-spin"></span> Caricamento...`;
+      statusEl.innerHTML = ` Caricamento...`;
 
       try {
         if (currentView === "logs" || currentView === "schedule") {
@@ -693,6 +702,11 @@
             .select("*")
             .order("log_time", { ascending: false })
             .limit(limit);
+
+          // Se siamo nella vista Piano Pubblicazioni, possiamo filtrare direttamente da DB:
+          if (currentView === "schedule") {
+            query = query.in("execution_mode", ["DISABLED", "DISABLE"]);
+          }
 
           const { data, error } = await query;
           if (error) throw error;
