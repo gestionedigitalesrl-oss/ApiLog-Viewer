@@ -1,0 +1,74 @@
+name: Automatic Versioning & Release
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.github/**'
+      - 'README.md'
+      - '.gitignore'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  version-and-release:
+    name: Generate Version & Release
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, 'chore(release)')"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Calcola nuova versione e data di rilascio
+        id: versioning
+        run: |
+          export TZ="Europe/Rome"
+          BUILD_DATE=$(date +"%Y-%m-%dT%H:%M:%S")
+          VERSION_TAG="v$(date +"%Y.%m.%d-%H%M")"
+          
+          echo "build_date=${BUILD_DATE}" >> $GITHUB_OUTPUT
+          echo "version_tag=${VERSION_TAG}" >> $GITHUB_OUTPUT
+          
+          echo "Build Date: ${BUILD_DATE}"
+          echo "Version Tag: ${VERSION_TAG}"
+
+      - name: Aggiorna versione in index.html
+        run: |
+          BUILD_DATE="${{ steps.versioning.outputs.build_date }}"
+          VERSION_TAG="${{ steps.versioning.outputs.version_tag }}"
+          
+          sed -i -E "s/buildDate: \"[^\"]*\"/buildDate: \"$BUILD_DATE\"/" index.html
+          sed -i -E "s/versionLabel: \"[^\"]*\"/versionLabel: \"$VERSION_TAG\"/" index.html
+          
+          echo "Verifica modifiche applicate in index.html:"
+          git diff index.html
+
+      - name: Commit e push versione aggiornata
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if git diff --quiet index.html; then
+            echo "Nessuna variazione in index.html."
+          else
+            git add index.html
+            git commit -m "chore(release): bump version to ${{ steps.versioning.outputs.version_tag }} [skip ci]"
+            git push origin main
+          fi
+
+      - name: Crea Release su GitHub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION_TAG="${{ steps.versioning.outputs.version_tag }}"
+          gh release create "${VERSION_TAG}" \
+            --title "Release ${VERSION_TAG}" \
+            --target main \
+            --generate-notes
