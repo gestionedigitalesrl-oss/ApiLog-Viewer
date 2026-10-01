@@ -325,12 +325,11 @@
   </div>
 
   <script>
-    // test versione
     // Configurazione Versione incrementale basata su data e ora di rilascio
     const APP_CONFIG = {
       // Formato standard incrementale: Anno.Mese.Giorno-OraMinuti
-      buildDate: "2026-09-28T18:49:19",
-      versionLabel: "v2026.09.28-1849"
+      buildDate: "2026-09-28T15:58:00",
+      versionLabel: "v2026.09.28-1558"
     };
 
     function initVersionInfo() {
@@ -860,21 +859,32 @@
         return;
       }
 
+      // Crea un Set con gli ID (o riferimenti) dell'ultima elaborazione rilevata
+      const latestSessionLogs = (detectedSessions && detectedSessions.length > 0)
+        ? new Set(detectedSessions[0].logs.map(l => l.id || l.log_time))
+        : new Set();
+
+
       tbody.innerHTML = logs.map(row => {
         const isWarning1D = isOneDayRecord(row);
         const isTest = isTestRecord(row);
+        const isLatestBatch = latestSessionLogs.has(row.id || row.log_time);
 
-        const vehicle = row.vehicle_model ? 
-          `<span class="text-slate-200 font-semibold">${row.vehicle_model}</span> ${row.vehicle_id ? `<span class="text-slate-500">#${row.vehicle_id}</span>` : ""}` : 
+       const vehicle = row.vehicle_model ?
+          `<span class="text-slate-200 font-semibold">${row.vehicle_model}</span> ${row.vehicle_id ? `<span class="text-slate-500">#${row.vehicle_id}</span>` : ""}` :
           `<span class="text-slate-600">-</span>`;
 
         let rowClass = "hover:bg-slate-800/40 transition";
-        if (isTest) {
+        if (isLatestBatch) {
+          // Sfondo tenue indaco/blu con leggero accento sul bordo sinistro
+          rowClass = "bg-indigo-900/40 border-l-2 border-l-indigo-400/70 hover:bg-indigo-900/60 transition";
+        } else if (isTest) {
           rowClass = "bg-sky-950/20 border-l-2 border-l-sky-500/40 hover:bg-sky-900/30 transition";
         }
 
         const msg = row.message || "-";
         const isLongMsg = msg.length > 75;
+
 
         return `
           <tr class="${rowClass}">
