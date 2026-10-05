@@ -328,8 +328,8 @@
     // Configurazione Versione incrementale basata su data e ora di rilascio
     const APP_CONFIG = {
       // Formato standard incrementale: Anno.Mese.Giorno-OraMinuti
-      buildDate: "2026-10-01T11:46:27",
-      versionLabel: "v2026.10.01-1146"
+      buildDate: "2026-09-28T15:58:00",
+      versionLabel: "v2026.09.28-1558"
     };
 
     function initVersionInfo() {
@@ -407,13 +407,20 @@
 
     function identifySessions(logs) {
       if (!logs || logs.length === 0) return [];
+      
+      // Solo per view diverse da "logs" filtra i log con execution_mode DISABLE / DISABLED / TEST
+      disabledLogs = [];
+      
+      if (currentView != "logs") {
+        disabledLogs = logs.filter(row => {
+          const mode = (row.execution_mode || "").trim().toUpperCase();
+          return mode === "DISABLED" || mode === "DISABLE" || mode === "TEST";
+        });
+      }
+      else disabledLogs = logs;
+      
 
-      // Filtra considerando unicamente i log con execution_mode DISABLE / DISABLED
-      const disabledLogs = logs.filter(row => {
-        const mode = (row.execution_mode || "").trim().toUpperCase();
-        return mode === "DISABLED" || mode === "DISABLE" || mode === "TEST";
-      });
-
+      //const disabledLogs = logs
       if (disabledLogs.length === 0) return [];
 
       const sessions = [];
@@ -436,9 +443,13 @@
         } else {
           const gap = currentSession.startTime - rowTime;
           const totalSpan = currentSession.latestTime - rowTime;
-
+           
           if (gap > MAX_GAP_BETWEEN_LOGS_MS || totalSpan > MAX_BATCH_SPAN_MS) {
-            sessions.push(currentSession);
+            //aggiunto controllo di lunghezza sessione, se c'è solo un log non lo considero una sessione valida
+            if (currentSession.logs.length > 1) {
+              sessions.push(currentSession);
+            }
+            //sessions.push(currentSession);
             currentSession = {
               startTime: rowTime,
               latestTime: rowTime,
@@ -556,9 +567,16 @@
         containerLimit.classList.remove("hidden");
         hintText.innerText = "Seleziona dal menu in alto la data/ora della sessione batch da analizzare";
 
-        if (logsCache.length === 0) fetchData();
+        const selectEl = document.getElementById("filter-session");
+        sessionNotFound = false;
+        
+        if(selectEl.options.length === 1 
+          && selectEl.options[0].text.includes("Caricamento sessioni") ) sessionNotFound = true;
+
+        if (logsCache.length === 0 || sessionNotFound ) fetchData();
         else renderScheduleView();
       }
+      updateStats();
     }
 
     function isOneDayRecord(row) {
@@ -716,7 +734,7 @@
           if (selectedSessionIndex >= detectedSessions.length) {
             selectedSessionIndex = 0;
           }
-          populateSessionsDropdown();
+          if (currentView === "schedule") populateSessionsDropdown();
         } else {
           let query = supabaseClient
             .from("operazioni_veicoli")
