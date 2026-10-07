@@ -145,17 +145,6 @@
           <input type="text" id="filter-search" placeholder="Cerca veicolo, id, messaggio..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
         </div>
 
-        <!-- Selettore Sessione di Elaborazione (visibile solo in vista Piano Pubblicazioni) -->
-        <div id="container-session" class="w-full sm:w-64 hidden">
-          <label class="block text-xs font-medium text-blue-400 mb-1 flex items-center gap-1.5">
-            <i data-lucide="history" class="w-3.5 h-3.5"></i>
-            Sessione Elaborazione
-          </label>
-          <select id="filter-session" class="w-full bg-slate-900 border border-blue-500/50 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-blue-200 focus:outline-none focus:border-blue-400 font-mono">
-            <option value="0">Caricamento sessioni...</option>
-          </select>
-        </div>
-
         <!-- Calendario Flatpickr (solo vista Log) -->
         <div id="container-calendar" class="w-full sm:w-48">
           <div class="flex items-center justify-between mb-1">
@@ -185,7 +174,7 @@
           </select>
         </div>
 
-        <!-- Filtro Canale (solo vista Veicoli) -->
+        <!-- Filtro Canale (vista Veicoli e Piano Pubblicazioni) -->
         <div id="container-channel" class="w-36 hidden">
           <label class="block text-xs font-medium text-slate-400 mb-1">Filtro Canale</label>
           <select id="filter-channel" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
@@ -289,7 +278,7 @@
       </div>
     </div>
 
-    <!-- Contenitore Vista Calendario Settimanale -->
+    <!-- Contenitore Vista Piano Pubblicazioni -->
     <div id="schedule-wrapper" class="hidden space-y-4">
       <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
@@ -297,13 +286,13 @@
             <i data-lucide="clock" class="w-5 h-5"></i>
           </div>
           <div>
-            <h2 class="text-sm font-semibold text-white">Sessione di elaborazione selezionata</h2>
+            <h2 class="text-sm font-semibold text-white">Piano Operazioni Veicoli</h2>
             <p id="schedule-last-run-info" class="text-xs text-slate-400 font-mono mt-0.5">Calcolo in corso...</p>
           </div>
         </div>
         <div class="flex items-center gap-2 text-xs text-slate-400 font-medium bg-slate-900/60 px-3 py-2 rounded-lg border border-slate-800">
           <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          Previsioni calcolate esclusivamente sui record della sessione scelta
+          Base dati: operazioni_veicoli (Spegnimento: Mar/Sab • Ripubblicazione: Mer/Dom)
         </div>
       </div>
 
@@ -327,9 +316,8 @@
   <script>
     // Configurazione Versione incrementale basata su data e ora di rilascio
     const APP_CONFIG = {
-      // Formato standard incrementale: Anno.Mese.Giorno-OraMinuti
-      buildDate: "2026-10-01T16:30:03",
-      versionLabel: "v2026.10.01-1630"
+      buildDate: "2026-10-07T11:25:00",
+      versionLabel: "v2026.10.07-1125"
     };
 
     function initVersionInfo() {
@@ -354,8 +342,8 @@
     
     // Lettura delle chiavi da config.js (window.ENV) con fallback
     const env = window.ENV || window.CONFIG || {};
-    const SUPABASE_URL = env.SUPABASE_URL ;
-    const SUPABASE_KEY = env.SUPABASE_KEY ;
+    const SUPABASE_URL = env.SUPABASE_URL;
+    const SUPABASE_KEY = env.SUPABASE_KEY;
 
     let supabaseClient = null;
 
@@ -363,18 +351,15 @@
       console.error("Configurazione mancante: SUPABASE_URL o SUPABASE_KEY non definite in config.js");
       const statusEl = document.getElementById("sync-status");
       if (statusEl) {
-        statusEl.innerHTML = ` Config mancante`;
+        statusEl.innerHTML = `Config mancante`;
       }
     } else {
       supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      console.error("Configurazione OK");
     }
 
     let currentView = "logs"; // "logs", "vehicles" o "schedule"
     let logsCache = [];
     let vehiclesCache = [];
-    let detectedSessions = []; // Elenco sessioni raggruppate
-    let selectedSessionIndex = 0; // Default: la più recente
     let selectedCalendarDate = "";
 
     const calendarPicker = flatpickr("#filter-calendar", {
@@ -389,113 +374,6 @@
       }
     });
 
-    function detectChannel(rowOrText) {
-      let str = "";
-      if (typeof rowOrText === "string") {
-        str = rowOrText.toLowerCase();
-      } else if (rowOrText && typeof rowOrText === "object") {
-        const msg = rowOrText.message || "";
-        const flag = rowOrText.flag || "";
-        const meta = rowOrText.raw_metadata ? JSON.stringify(rowOrText.raw_metadata) : "";
-        str = `${msg} ${flag} ${meta}`.toLowerCase();
-      }
-
-      if (str.includes("subito")) return "subito";
-      if (str.includes("autoscout") || str.includes("as24") || str.includes("auto scout")) return "autoscout";
-      return "generico";
-    }
-
-    function identifySessions(logs) {
-      if (!logs || logs.length === 0) return [];
-      
-      // Solo per view diverse da "logs" filtra i log con execution_mode DISABLE / DISABLED / TEST
-      disabledLogs = [];
-      
-      if (currentView != "logs") {
-        disabledLogs = logs.filter(row => {
-          const mode = (row.execution_mode || "").trim().toUpperCase();
-          return mode === "DISABLED" || mode === "DISABLE" || mode === "TEST";
-        });
-      }
-      else disabledLogs = logs;
-      
-
-      //const disabledLogs = logs
-      if (disabledLogs.length === 0) return [];
-
-      const sessions = [];
-      const MAX_GAP_BETWEEN_LOGS_MS = 90 * 1000;
-      const MAX_BATCH_SPAN_MS = 6 * 60 * 1000;
-
-      let currentSession = null;
-
-      for (let i = 0; i < disabledLogs.length; i++) {
-        const row = disabledLogs[i];
-        const rowTime = new Date(row.log_time).getTime();
-
-        if (!currentSession) {
-          currentSession = {
-            startTime: rowTime,
-            latestTime: rowTime,
-            latestLog: row,
-            logs: [row]
-          };
-        } else {
-          const gap = currentSession.startTime - rowTime;
-          const totalSpan = currentSession.latestTime - rowTime;
-           
-          if (gap > MAX_GAP_BETWEEN_LOGS_MS || totalSpan > MAX_BATCH_SPAN_MS) {
-            //aggiunto controllo di lunghezza sessione, se c'è solo un log non lo considero una sessione valida
-            if (currentSession.logs.length > 1) {
-              sessions.push(currentSession);
-            }
-            //sessions.push(currentSession);
-            currentSession = {
-              startTime: rowTime,
-              latestTime: rowTime,
-              latestLog: row,
-              logs: [row]
-            };
-          } else {
-            currentSession.logs.push(row);
-            currentSession.startTime = rowTime;
-
-            if (row.event_type === "JOB_START") {
-              sessions.push(currentSession);
-              currentSession = null;
-            }
-          }
-        }
-      }
-
-      if (currentSession && currentSession.logs.length > 1) {
-        sessions.push(currentSession);
-      }
-
-      return sessions;
-    }
-
-    function populateSessionsDropdown() {
-      const selectEl = document.getElementById("filter-session");
-      if (!selectEl) return;
-
-      if (detectedSessions.length === 0) {
-        selectEl.innerHTML = `<option value="0">Nessuna sessione trovata</option>`;
-        return;
-      }
-
-      selectEl.innerHTML = detectedSessions.map((session, idx) => {
-        const timeFormatted = formatDate(session.latestLog.log_time);
-        const count = session.logs.length;
-        const mode = session.latestLog.execution_mode ? `[${session.latestLog.execution_mode}]` : "";
-        const label = idx === 0 
-          ? `⭐ Ultima: ${timeFormatted} (${count} log) ${mode}`
-          : `${timeFormatted} (${count} log) ${mode}`;
-        
-        return `<option value="${idx}" ${idx === selectedSessionIndex ? "selected" : ""}>${label}</option>`;
-      }).join("");
-    }
-
     function setView(view) {
       currentView = view;
       const btnLogs = document.getElementById("btn-view-logs");
@@ -507,7 +385,6 @@
       const containerMode = document.getElementById("container-mode");
       const containerLevel = document.getElementById("container-level");
       const containerChannel = document.getElementById("container-channel");
-      const containerSession = document.getElementById("container-session");
       const containerEvents = document.getElementById("container-events-filter");
       const containerLimit = document.getElementById("container-limit");
       const tableWrapper = document.getElementById("table-wrapper");
@@ -531,7 +408,6 @@
         containerMode.classList.remove("hidden");
         containerLevel.classList.remove("hidden");
         containerChannel.classList.add("hidden");
-        containerSession.classList.add("hidden");
         containerEvents.classList.remove("hidden");
         containerLimit.classList.remove("hidden");
         hintText.innerText = "Suggerimento: tocca le descrizioni per espanderle";
@@ -546,7 +422,6 @@
         containerMode.classList.add("hidden");
         containerLevel.classList.add("hidden");
         containerChannel.classList.remove("hidden");
-        containerSession.classList.add("hidden");
         containerEvents.classList.add("hidden");
         containerLimit.classList.remove("hidden");
         hintText.innerText = "Suggerimento: tocca le descrizioni per espanderle";
@@ -554,26 +429,19 @@
         else applyFilters();
       } else if (view === "schedule") {
         btnSchedule.className = activeClass;
-        activeTableName.innerText = "api_vehicle_logs [Previsioni]";
+        activeTableName.innerText = "operazioni_veicoli [Piano Pubblicazioni]";
 
         tableWrapper.classList.add("hidden");
         scheduleWrapper.classList.remove("hidden");
         containerCal.classList.add("hidden");
         containerMode.classList.add("hidden");
         containerLevel.classList.add("hidden");
-        containerChannel.classList.add("hidden");
-        containerSession.classList.remove("hidden");
+        containerChannel.classList.remove("hidden");
         containerEvents.classList.add("hidden");
         containerLimit.classList.remove("hidden");
-        hintText.innerText = "Seleziona dal menu in alto la data/ora della sessione batch da analizzare";
+        hintText.innerText = "Operazioni allineate alle finestre di depubblicazione (Mar/Sab) e ripubblicazione (Mer/Dom)";
 
-        const selectEl = document.getElementById("filter-session");
-        sessionNotFound = false;
-        
-        if(selectEl.options.length === 1 
-          && selectEl.options[0].text.includes("Caricamento sessioni") ) sessionNotFound = true;
-
-        if (logsCache.length === 0 || sessionNotFound ) fetchData();
+        if (vehiclesCache.length === 0) fetchData();
         else renderScheduleView();
       }
       updateStats();
@@ -583,24 +451,6 @@
       if (row.event_type === "EXPIRY_WARNING_1D") return true;
       const msg = row.message || "";
       return Boolean(/\btrigger\s+tra\s+1\s*(gg|giorno|day)\b/i.test(msg));
-    }
-
-    function extractTriggerDays(message) {
-      if (!message) return null;
-      const match = message.match(/(?:trigger\s+tra|tra)\s+(\d+)\s*(?:gg|giorn[oi]|day[s]?)/i);
-      if (match && match[1]) {
-        return parseInt(match[1], 10);
-      }
-      return null;
-    }
-
-    function isTestRecord(row) {
-      if (row.execution_mode === "TEST") return true;
-      const msg = (row.message || "").toLowerCase();
-      const model = (row.vehicle_model || "").toLowerCase();
-      const metaStr = row.raw_metadata ? JSON.stringify(row.raw_metadata).toLowerCase() : "";
-      const testRegex = /\b(test|dry-run|dryrun|simulazione|mock)\b/i;
-      return testRegex.test(msg) || testRegex.test(model) || testRegex.test(metaStr);
     }
 
     function formatDate(rawStr) {
@@ -618,11 +468,6 @@
       return `${day}/${month}/${year} ${time}`;
     }
 
-    function extractDateString(rawStr) {
-      if (!rawStr) return "";
-      return rawStr.substring(0, 10);
-    }
-
     function renderBadgeMode(mode) {
       const m = (mode || "UNKNOWN").toUpperCase();
       const badges = {
@@ -631,8 +476,7 @@
         TEST: "bg-amber-950/80 text-amber-300 border-amber-800",
         UNKNOWN: "bg-slate-800 text-slate-400 border-slate-700"
       };
-      const badgeStyle = badges[m] || badges.UNKNOWN;
-      return `<span class="px-2 py-0.5 rounded border text-[10px] font-bold tracking-wider uppercase ${badgeStyle}">${m}</span>`;
+      return `<span class="px-2 py-0.5 rounded border text-[10px] font-bold tracking-wider uppercase ${badges[m] || badges.UNKNOWN}">${m}</span>`;
     }
 
     function renderBadgeLevel(level) {
@@ -642,41 +486,21 @@
         ERROR: "bg-rose-950 text-rose-400 border-rose-800",
         CRITICAL: "bg-red-950 text-red-300 border-red-700"
       };
-      const c = colors[level] || "bg-slate-800 text-slate-300 border-slate-700";
-      return `<span class="px-2 py-0.5 rounded border text-[10px] font-bold ${c}">${level}</span>`;
+      return `<span class="px-2 py-0.5 rounded border text-[10px] font-bold ${colors[level] || "bg-slate-800 text-slate-300 border-slate-700"}">${level}</span>`;
     }
 
-    function renderBadgeEvent(evt, isWarning1D, message = "") {
-      let badgeHtml = "";
+    function renderBadgeEvent(evt, isWarning1D) {
       if (isWarning1D || evt === "EXPIRY_WARNING_1D") {
-        badgeHtml = `<span class="px-2 py-0.5 rounded border text-[10px] font-medium font-sans bg-red-950/60 text-red-400 border-red-800/80">EXPIRY_WARNING_1D</span>`;
+        return `<span class="px-2 py-0.5 rounded border text-[10px] font-medium font-sans bg-red-950/60 text-red-400 border-red-800/80">EXPIRY_WARNING_1D</span>`;
       } else if (evt === "EXPIRY_TRIGGER") {
-        badgeHtml = `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans bg-amber-500/10 text-amber-300 border-amber-500/20">TERM ELAPSED</span>`;
-      } else {
-        const colors = {
-          STATE_UPDATE_SUCCESS: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
-          SKIPPED_NO_ACTION: "bg-slate-700/30 text-slate-400 border-slate-600/30",
-          REALIGNMENT_REQUIRED: "bg-purple-500/10 text-purple-300 border-purple-500/20"
-        };
-        const c = colors[evt] || "bg-slate-800 text-slate-400 border-slate-700";
-        badgeHtml = `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans ${c}">${evt}</span>`;
+        return `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans bg-amber-500/10 text-amber-300 border-amber-500/20">TERM ELAPSED</span>`;
       }
-
-      const ch = detectChannel(message);
-      let iconHtml = "";
-
-      if (ch === "subito") {
-        iconHtml = `<img src="SubitoICO.png" alt="Subito" title="Subito" class="w-4 h-4 rounded-full object-contain shrink-0 shadow-sm" />`;
-      } else if (ch === "autoscout") {
-        iconHtml = `<img src="AS24Ico.png" alt="AutoScout24" title="AutoScout24" class="w-4 h-4 rounded-full object-contain shrink-0 shadow-sm" />`;
-      }
-
-      return `
-        <div class="inline-flex items-center gap-1.5">
-          ${iconHtml}
-          ${badgeHtml}
-        </div>
-      `;
+      const colors = {
+        STATE_UPDATE_SUCCESS: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+        SKIPPED_NO_ACTION: "bg-slate-700/30 text-slate-400 border-slate-600/30",
+        REALIGNMENT_REQUIRED: "bg-purple-500/10 text-purple-300 border-purple-500/20"
+      };
+      return `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans ${colors[evt] || "bg-slate-800 text-slate-400 border-slate-700"}">${evt}</span>`;
     }
 
     function renderStatusPill(statusVal) {
@@ -708,53 +532,41 @@
       }
     };
 
-   async function fetchData() {
+    async function fetchData() {
       const limit = parseInt(document.getElementById("filter-limit").value, 10);
       const statusEl = document.getElementById("sync-status");
-      statusEl.innerHTML = ` Caricamento...`;
+      statusEl.innerHTML = `Caricamento...`;
 
       try {
-        if (currentView === "logs" || currentView === "schedule") {
-          let query = supabaseClient
+        if (currentView === "logs") {
+          const { data, error } = await supabaseClient
             .from("api_vehicle_logs")
             .select("*")
             .order("log_time", { ascending: false })
             .limit(limit);
 
-          // Se siamo nella vista Piano Pubblicazioni, possiamo filtrare direttamente da DB:
-          if (currentView === "schedule") {
-            query = query.in("execution_mode", ["DISABLED", "DISABLE", "TEST"]);
-          }
-
-          const { data, error } = await query;
           if (error) throw error;
           logsCache = data || [];
-
-          detectedSessions = identifySessions(logsCache);
-          if (selectedSessionIndex >= detectedSessions.length) {
-            selectedSessionIndex = 0;
-          }
-          if (currentView === "schedule") populateSessionsDropdown();
+          applyFilters();
         } else {
-          let query = supabaseClient
+          // Utilizzato sia per Vista Veicoli che per Piano Pubblicazioni
+          const { data, error } = await supabaseClient
             .from("operazioni_veicoli")
             .select("*")
             .order("data_acquisizione", { ascending: false })
-            .limit(limit);
+            .limit(currentView === "schedule" ? 2000 : limit);
 
-          const { data, error } = await query;
           if (error) throw error;
           vehiclesCache = data || [];
+
+          if (currentView === "schedule") {
+            renderScheduleView();
+          } else {
+            applyFilters();
+          }
         }
 
         updateStats();
-
-        if (currentView === "schedule") {
-          renderScheduleView();
-        } else {
-          applyFilters();
-        }
-
         statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Aggiornato: ${new Date().toLocaleTimeString()}`;
       } catch (err) {
         console.error("Errore fetch:", err);
@@ -763,28 +575,22 @@
     }
 
     function updateStats() {
-      if (currentView === "logs" || currentView === "schedule") {
+      if (currentView === "logs") {
         document.getElementById("stat-label-1").innerText = "Totale Record Letti";
         document.getElementById("stat-val-1").innerText = logsCache.length;
-
         document.getElementById("stat-label-2").innerText = "Scadenza 1 Giorno";
         document.getElementById("stat-val-2").innerText = logsCache.filter(l => isOneDayRecord(l)).length;
-
         document.getElementById("stat-label-3").innerText = "TERM ELAPSED";
         document.getElementById("stat-val-3").innerText = logsCache.filter(l => l.event_type === "EXPIRY_TRIGGER").length;
-
         document.getElementById("stat-label-4").innerText = "Aggiornamenti Riusciti";
         document.getElementById("stat-val-4").innerText = logsCache.filter(l => l.event_type === "STATE_UPDATE_SUCCESS").length;
       } else {
         document.getElementById("stat-label-1").innerText = "Totale Flotta Veicoli";
         document.getElementById("stat-val-1").innerText = vehiclesCache.length;
-
         document.getElementById("stat-label-2").innerText = "Subito Attivi";
         document.getElementById("stat-val-2").innerText = vehiclesCache.filter(v => v.status_subito === 1).length;
-
         document.getElementById("stat-label-3").innerText = "AutoScout Attivi";
         document.getElementById("stat-val-3").innerText = vehiclesCache.filter(v => v.status_autoscout === 1).length;
-
         document.getElementById("stat-label-4").innerText = "Disattivati (Subito/AS)";
         document.getElementById("stat-val-4").innerText = vehiclesCache.filter(v => v.status_subito === 0 || v.status_autoscout === 0).length;
       }
@@ -808,11 +614,6 @@
         const filterMode = document.getElementById("filter-mode").value;
         const selectedEvents = getSelectedEventTypes();
 
-        const standardKnownTypes = [
-          "EXPIRY_WARNING_1D", "EXPIRY_TRIGGER", "STATE_UPDATE_SUCCESS", 
-          "SKIPPED_NO_ACTION", "REALIGNMENT_REQUIRED", "JOB_START", "JOB_END"
-        ];
-
         const filtered = logsCache.filter(item => {
           const matchesLevel = filterLevel === "ALL" || item.level === filterLevel;
           const currentMode = (item.execution_mode || "UNKNOWN").toUpperCase();
@@ -820,15 +621,10 @@
 
           let actualType = item.event_type;
           if (isOneDayRecord(item)) actualType = "EXPIRY_WARNING_1D";
+          const matchesEvent = selectedEvents.includes(actualType);
 
-          let matchesEvent = false;
-          if (selectedEvents.includes(actualType)) {
-            matchesEvent = true;
-          } else if (selectedEvents.includes("OTHER") && !standardKnownTypes.includes(actualType)) {
-            matchesEvent = true;
-          }
-
-          const matchesDate = !selectedCalendarDate || (extractDateString(item.log_time) === selectedCalendarDate);
+          const itemDate = item.log_time ? item.log_time.substring(0, 10) : "";
+          const matchesDate = !selectedCalendarDate || (itemDate === selectedCalendarDate);
 
           const matchesSearch = !searchTerm || 
             (item.message && item.message.toLowerCase().includes(searchTerm)) ||
@@ -877,39 +673,21 @@
         return;
       }
 
-      // Crea un Set con gli ID (o riferimenti) dell'ultima elaborazione rilevata
-      const latestSessionLogs = (detectedSessions && detectedSessions.length > 0)
-        ? new Set(detectedSessions[0].logs.map(l => l.id || l.log_time))
-        : new Set();
-
-
       tbody.innerHTML = logs.map(row => {
         const isWarning1D = isOneDayRecord(row);
-        const isTest = isTestRecord(row);
-        const isLatestBatch = latestSessionLogs.has(row.id || row.log_time);
-
-       const vehicle = row.vehicle_model ?
+        const vehicle = row.vehicle_model ?
           `<span class="text-slate-200 font-semibold">${row.vehicle_model}</span> ${row.vehicle_id ? `<span class="text-slate-500">#${row.vehicle_id}</span>` : ""}` :
           `<span class="text-slate-600">-</span>`;
-
-        let rowClass = "hover:bg-slate-800/40 transition";
-        if (isLatestBatch) {
-          // Sfondo tenue indaco/blu con leggero accento sul bordo sinistro
-          rowClass = "bg-indigo-900/40 border-l-2 border-l-indigo-400/70 hover:bg-indigo-900/60 transition";
-        } else if (isTest) {
-          rowClass = "bg-sky-950/20 border-l-2 border-l-sky-500/40 hover:bg-sky-900/30 transition";
-        }
 
         const msg = row.message || "-";
         const isLongMsg = msg.length > 75;
 
-
         return `
-          <tr class="${rowClass}">
+          <tr class="hover:bg-slate-800/40 transition">
             <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap text-white font-mono text-[11px] sm:text-xs">${formatDate(row.log_time)}</td>
             <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeMode(row.execution_mode)}</td>
             <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeLevel(row.level)}</td>
-            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeEvent(row.event_type, isWarning1D, row.message)}</td>
+            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeEvent(row.event_type, isWarning1D)}</td>
             <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap font-sans text-xs">${vehicle}</td>
             <td class="py-2 px-3 sm:px-4 min-w-[200px] max-w-[280px] sm:max-w-md">
               <div class="expandable-cell text-slate-300 font-sans text-xs">
@@ -987,99 +765,187 @@
       lucide.createIcons();
     }
 
-    // Costruzione della Vista Calendario Settimanale
+    // ================================================================
+    // LOGICA CICLO COMPLETO CON FINESTRE FISSE:
+    // - SPEGNIMENTO / DEPUBBLICAZIONE: Martedì (2) e Sabato (6)
+    // - RIACCENSIONE / RIPUBBLICAZIONE: Mercoledì (3) e Domenica (0)
+    // BASE DATI: OPERAZIONI_VEICOLI
+    // ================================================================
+
+    function parseVehicleDate(val) {
+      if (!val) return null;
+      const d = new Date(val);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function parseVehicleSwitchday(val) {
+      if (val === null || val === undefined || val === "") return null;
+      if (typeof val === "number" && Number.isFinite(val)) return val;
+      const parsed = parseFloat(String(val).replace(",", "."));
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    // Prossimo giorno di Spegnimento: Martedì (day 2) o Sabato (day 6)
+    function getNextDepublishDate(date) {
+      const target = new Date(date);
+      target.setHours(0, 0, 0, 0);
+      while (target.getDay() !== 2 && target.getDay() !== 6) {
+        target.setDate(target.getDate() + 1);
+      }
+      return target;
+    }
+
+    // Prossimo giorno di Ripubblicazione: Mercoledì (day 3) o Domenica (day 0)
+    function getNextRepublishDate(date) {
+      const target = new Date(date);
+      target.setHours(0, 0, 0, 0);
+      while (target.getDay() !== 0 && target.getDay() !== 3) {
+        target.setDate(target.getDate() + 1);
+      }
+      return target;
+    }
+
     function renderScheduleView() {
       const searchTerm = document.getElementById("filter-search").value.toLowerCase();
+      const filterChannel = document.getElementById("filter-channel").value;
       const lastRunInfoEl = document.getElementById("schedule-last-run-info");
       const gridContainer = document.getElementById("schedule-days-grid");
       const counterEl = document.getElementById("records-counter");
 
-      if (logsCache.length === 0 || detectedSessions.length === 0) {
-        lastRunInfoEl.innerText = "Nessun dato log disponibile.";
-        gridContainer.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500">Nessuna informazione temporale trovata.</div>`;
+      if (vehiclesCache.length === 0) {
+        lastRunInfoEl.innerText = "Nessun veicolo caricato.";
+        gridContainer.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500">Nessun veicolo presente nella tabella operazioni_veicoli.</div>`;
         return;
       }
 
-      const activeSession = detectedSessions[selectedSessionIndex] || detectedSessions[0];
-      const targetLog = activeSession.latestLog;
-      const baseDate = new Date(targetLog.log_time);
-      const currentBatchLogs = activeSession.logs;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-      lastRunInfoEl.innerText = `Data/Ora base: ${formatDate(targetLog.log_time)} (Modalità: ${targetLog.execution_mode || "N/D"} - ${currentBatchLogs.length} record in sessione)`;
+      lastRunInfoEl.innerText = `Oggi: ${today.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })} | Spegnimento: Mar/Sab • Ripubblicazione: Mer/Dom`;
 
-      // Inizializza i bucket
       const daysBuckets = [
-        { label: "Oggi (TERM ELAPSED)", offset: 0, items: [] },
+        { label: "Oggi (Azione Richiesta)", offset: 0, items: [] },
         { label: "Domani", offset: 1, items: [] },
         { label: "Tra 2 Giorni", offset: 2, items: [] },
         { label: "Tra 3 Giorni", offset: 3, items: [] },
         { label: "Tra 4 Giorni", offset: 4, items: [] },
         { label: "Tra 5 Giorni", offset: 5, items: [] },
         { label: "Tra 6 Giorni", offset: 6, items: [] },
-        { label: "7+ Giorni / Altro", offset: 7, items: [] }
+        { label: "7+ Giorni / Oltre", offset: 7, items: [] }
       ];
 
       daysBuckets.forEach(b => {
         if (b.offset < 7) {
-          const target = new Date(baseDate);
+          const target = new Date(today);
           target.setDate(target.getDate() + b.offset);
           b.dateStr = target.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: '2-digit' });
         } else {
-          b.dateStr = "A seguire";
+          b.dateStr = "In seguito";
         }
       });
 
-      const seenKey = new Set();
       let totalFound = 0;
 
-      currentBatchLogs.forEach(row => {
-        const msg = row.message || "";
-        const msgLower = msg.toLowerCase();
-        const rowChannel = detectChannel(row);
+      vehiclesCache.forEach(vehicle => {
+        const desc = vehicle.descrizione || `ID #${vehicle.id}`;
+        const descLower = desc.toLowerCase();
+        const idStr = String(vehicle.id || "");
 
-        let days = extractTriggerDays(msg);
-
-        // Controllo prioritario per TERM ELAPSED (Oggi / 0 giorni)
-        const isTermElapsed = row.event_type === "EXPIRY_TRIGGER" || /\bterm\s+elapsed\b/i.test(msg);
-
-        if (isTermElapsed) {
-          days = 0;
-        } else if (days === null && isOneDayRecord(row)) {
-          days = 1;
+        if (searchTerm && !descLower.includes(searchTerm) && !idStr.includes(searchTerm)) {
+          return;
         }
 
-        if (days !== null) {
-          const vehicle = row.vehicle_model || (row.vehicle_id ? `ID #${row.vehicle_id}` : "Veicolo non specificato");
-          
-          if (searchTerm && !msgLower.includes(searchTerm) && !vehicle.toLowerCase().includes(searchTerm)) {
-            return;
+        const switchDays = parseVehicleSwitchday(vehicle.switchday);
+        if (switchDays === null) return;
+
+        const channelsToCheck = [];
+        const flag = (vehicle.flag || "").toLowerCase();
+
+        if (filterChannel === "ALL" || filterChannel === "subito") {
+          if ((vehicle.status_subito !== undefined && vehicle.status_subito !== null) || flag.includes("subito") || vehicle.data_p_subito) {
+            channelsToCheck.push("subito");
+          }
+        }
+        if (filterChannel === "ALL" || filterChannel === "autoscout") {
+          if ((vehicle.status_autoscout !== undefined && vehicle.status_autoscout !== null) || flag.includes("autoscout") || vehicle.data_p_autoscout) {
+            channelsToCheck.push("autoscout");
+          }
+        }
+
+        if (channelsToCheck.length === 0 && filterChannel === "ALL") {
+          channelsToCheck.push("generico");
+        }
+
+        channelsToCheck.forEach(channel => {
+          let pubDateRaw = null;
+          let currentStatus = 1;
+
+          if (channel === "subito") {
+            pubDateRaw = vehicle.data_p_subito;
+            currentStatus = vehicle.status_subito ?? 1;
+          } else if (channel === "autoscout") {
+            pubDateRaw = vehicle.data_p_autoscout;
+            currentStatus = vehicle.status_autoscout ?? 1;
+          }
+          pubDateRaw = pubDateRaw || vehicle.data_pubblicazione;
+
+          // Se manca la data pubblicazione, fallback su data_acquisizione
+          const baseDate = parseVehicleDate(pubDateRaw) || parseVehicleDate(vehicle.data_acquisizione);
+          if (!baseDate) return;
+
+          const isFallbackAcquisition = !pubDateRaw && Boolean(vehicle.data_acquisizione);
+
+          // Calcolo raggiungimento naturale giorni switch
+          const naturalExpiryDate = new Date(baseDate);
+          naturalExpiryDate.setDate(naturalExpiryDate.getDate() + switchDays);
+          naturalExpiryDate.setHours(0, 0, 0, 0);
+
+          let actionDate;
+          let actionType = "";
+
+          if (currentStatus === 1) {
+            // ATTIVO: richiede Spegnimento (Martedì o Sabato)
+            actionType = "DEPUBBLICAZIONE";
+            const referenceForAction = naturalExpiryDate > today ? naturalExpiryDate : today;
+            actionDate = getNextDepublishDate(referenceForAction);
+          } else {
+            // SPENTO: pronto alla Ripubblicazione (Mercoledì o Domenica)
+            actionType = "RIPUBBLICAZIONE";
+            actionDate = getNextRepublishDate(today);
           }
 
-          const uniqueKey = `${row.vehicle_id || vehicle}-${rowChannel}`;
-          if (seenKey.has(uniqueKey)) return;
-          seenKey.add(uniqueKey);
+          const diffMs = actionDate.getTime() - today.getTime();
+          const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+          const isTodayAction = diffDays === 0;
 
           totalFound++;
 
           const itemData = {
-            vehicle: vehicle,
-            vehicleId: row.vehicle_id,
-            channel: rowChannel,
-            message: msg,
-            days: days,
-            mode: row.execution_mode,
-            isTermElapsed: isTermElapsed
+            vehicleId: vehicle.id,
+            vehicle: desc,
+            channel: channel,
+            currentStatus: currentStatus,
+            actionType: actionType,
+            days: diffDays,
+            isTodayAction: isTodayAction,
+            switchday: switchDays,
+            baseDate: baseDate,
+            naturalExpiryDate: naturalExpiryDate,
+            actionDate: actionDate,
+            isFallbackAcquisition: isFallbackAcquisition
           };
 
-          if (days >= 0 && days < 7) {
-            daysBuckets[days].items.push(itemData);
-          } else if (days >= 7) {
+          if (diffDays <= 0) {
+            daysBuckets[0].items.push(itemData);
+          } else if (diffDays >= 1 && diffDays <= 6) {
+            daysBuckets[diffDays].items.push(itemData);
+          } else {
             daysBuckets[7].items.push(itemData);
           }
-        }
+        });
       });
 
-      if (counterEl) counterEl.innerText = `Veicoli pianificati nella sessione: ${totalFound}`;
+      if (counterEl) counterEl.innerText = `Pubblicazioni analizzate: ${totalFound}`;
 
       gridContainer.innerHTML = daysBuckets.map((bucket, idx) => {
         const isToday = idx === 0;
@@ -1094,13 +960,13 @@
           headerColor = "text-amber-400 font-bold";
           badgeHeader = "bg-amber-500/20 text-amber-300 border border-amber-500/30";
         } else if (isTomorrow) {
-          colBorder = "border-red-500/30 bg-red-950/10";
-          headerColor = "text-red-400 font-bold";
-          badgeHeader = "bg-red-500/20 text-red-300 border border-red-500/30";
+          colBorder = "border-blue-500/30 bg-blue-950/10";
+          headerColor = "text-blue-400 font-bold";
+          badgeHeader = "bg-blue-500/20 text-blue-300 border border-blue-500/30";
         }
 
         const itemsHtml = bucket.items.length === 0 
-          ? `<div class="p-3 text-center text-xs text-slate-600 italic">Nessun evento</div>`
+          ? `<div class="p-3 text-center text-xs text-slate-600 italic">Nessuna operazione</div>`
           : bucket.items.map(item => {
               let iconImg = "";
               if (item.channel === "subito") {
@@ -1111,9 +977,16 @@
                 iconImg = `<i data-lucide="share-2" class="w-3.5 h-3.5 text-slate-500 shrink-0"></i>`;
               }
 
-              const triggerLabel = item.isTermElapsed || item.days === 0
-                ? `<span class="text-amber-400 font-semibold uppercase tracking-wider">TERM ELAPSED</span>`
-                : `<span class="text-blue-400 font-medium">Trigger tra ${item.days} gg</span>`;
+              const statusBadge = item.currentStatus === 1
+                ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Attivo</span>`
+                : `<span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30">Spento</span>`;
+
+              const actionBadge = item.actionType === "DEPUBBLICAZIONE"
+                ? `<span class="text-rose-400 font-semibold uppercase tracking-wider">Depubblica (Mar/Sab)</span>`
+                : `<span class="text-emerald-400 font-semibold uppercase tracking-wider">Ripubblica (Mer/Dom)</span>`;
+
+              const baseLabel = item.isFallbackAcquisition ? "Data Acquisiz." : "Data Pubbl.";
+              const actionDayName = item.actionDate.toLocaleDateString('it-IT', { weekday: 'short' });
 
               return `
                 <div class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/70 hover:border-slate-600 rounded-lg p-2.5 transition flex flex-col gap-1.5 shadow-sm">
@@ -1122,14 +995,22 @@
                       ${iconImg}
                       <span class="text-xs font-semibold text-slate-200 truncate" title="${item.vehicle}">${item.vehicle}</span>
                     </div>
-                    ${item.vehicleId ? `<span class="text-[10px] font-mono text-slate-400">#${item.vehicleId}</span>` : ''}
+                    <div class="flex items-center gap-1">
+                      ${statusBadge}
+                      <span class="text-[10px] font-mono text-slate-400">#${item.vehicleId}</span>
+                    </div>
                   </div>
-                  <p class="text-[11px] text-slate-400 font-sans leading-tight line-clamp-2" title="${item.message}">
-                    ${item.message}
-                  </p>
+
                   <div class="flex items-center justify-between pt-1 border-t border-slate-700/50 mt-0.5 text-[10px]">
-                    ${triggerLabel}
-                    <span class="text-slate-500 font-mono">${item.mode || ''}</span>
+                    ${actionBadge}
+                    <span class="text-slate-400 font-mono">Switch: ${item.switchday}gg</span>
+                  </div>
+
+                  <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-0.5">
+                    <span>${baseLabel}: ${item.baseDate.toLocaleDateString('it-IT')}</span>
+                    <span class="text-blue-300 font-semibold">
+                      Turno: ${actionDayName} ${item.actionDate.toLocaleDateString('it-IT')}
+                    </span>
                   </div>
                 </div>
               `;
@@ -1173,12 +1054,6 @@
     document.getElementById("filter-mode").addEventListener("change", applyFilters);
     document.getElementById("filter-channel").addEventListener("change", applyFilters);
     document.getElementById("filter-limit").addEventListener("change", fetchData);
-
-    // Event Listener Cambio Sessione Elaborazione
-    document.getElementById("filter-session").addEventListener("change", (e) => {
-      selectedSessionIndex = parseInt(e.target.value, 10) || 0;
-      renderScheduleView();
-    });
 
     document.querySelectorAll(".status-checkbox").forEach(cb => {
       cb.addEventListener("change", applyFilters);
