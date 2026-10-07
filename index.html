@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -18,7 +19,7 @@
 
   <!-- Caricamento configurazione esterna -->
   <script src="config.js"></script>
-  
+
   <!-- Flatpickr -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
@@ -33,6 +34,7 @@
       overflow: hidden;
       word-break: break-word;
     }
+
     .expanded-text {
       display: block;
       word-break: break-word;
@@ -44,27 +46,34 @@
       scrollbar-width: thin;
       scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
     }
+
     .custom-scrollbar::-webkit-scrollbar {
       width: 4px;
     }
+
     .custom-scrollbar::-webkit-scrollbar-track {
       background: transparent;
     }
+
     .custom-scrollbar::-webkit-scrollbar-thumb {
       background-color: rgba(100, 116, 139, 0.35);
       border-radius: 9999px;
     }
+
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
       background-color: rgba(148, 163, 184, 0.6);
     }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-3 sm:p-5 md:p-8 font-sans antialiased selection:bg-blue-600 selection:text-white">
+
+<body
+  class="bg-slate-900 text-slate-100 min-h-screen p-3 sm:p-5 md:p-8 font-sans antialiased selection:bg-blue-600 selection:text-white">
 
   <div class="max-w-7xl mx-auto space-y-4 md:space-y-6">
-    
+
     <!-- Intestazione -->
-    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4 md:pb-5">
+    <header
+      class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4 md:pb-5">
       <div>
         <div class="flex items-center gap-2.5">
           <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
@@ -72,16 +81,14 @@
             Monitor Log API & Flotta
           </h1>
           <!-- Badge Versione incrementale discreto -->
-          <span 
-            id="app-version-badge" 
-            title="Versione basata su data/ora rilascio" 
-            class="cursor-default select-none text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-400 border border-slate-700/80 hover:border-slate-600 hover:text-slate-300 transition"
-          >
+          <span id="app-version-badge" title="Versione basata su data/ora rilascio"
+            class="cursor-default select-none text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-400 border border-slate-700/80 hover:border-slate-600 hover:text-slate-300 transition">
             v...
           </span>
         </div>
         <p class="text-xs sm:text-sm text-slate-400 mt-1 flex items-center gap-2">
-          <span>Tabella attiva: <code id="active-table-name" class="text-blue-400 font-mono">api_vehicle_logs</code></span>
+          <span>Tabella attiva: <code id="active-table-name"
+              class="text-blue-400 font-mono">api_vehicle_logs</code></span>
           <span class="text-slate-600">•</span>
           <span id="app-build-time" class="text-[11px] text-slate-500 font-mono">Build: ...</span>
         </p>
@@ -90,25 +97,30 @@
       <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
         <!-- Switcher Viste / Tabelle -->
         <div class="bg-slate-800/80 p-1 border border-slate-700 rounded-xl flex items-center gap-1">
-          <button id="btn-view-logs" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition bg-blue-600 text-white shadow">
+          <button id="btn-view-logs"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition bg-blue-600 text-white shadow">
             <i data-lucide="list" class="w-3.5 h-3.5"></i>
             Log API
           </button>
-          <button id="btn-view-vehicles" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition text-slate-400 hover:text-white">
+          <button id="btn-view-vehicles"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition text-slate-400 hover:text-white">
             <i data-lucide="car" class="w-3.5 h-3.5"></i>
             Tabella Veicoli
           </button>
-          <button id="btn-view-schedule" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition text-slate-400 hover:text-white">
+          <button id="btn-view-schedule"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition text-slate-400 hover:text-white">
             <i data-lucide="calendar-clock" class="w-3.5 h-3.5"></i>
             Piano Pubblicazioni
           </button>
         </div>
 
-        <span id="sync-status" class="text-xs text-slate-400 flex items-center gap-1.5 bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-700/60">
+        <span id="sync-status"
+          class="text-xs text-slate-400 flex items-center gap-1.5 bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-700/60">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           Connesso
         </span>
-        <button id="btn-refresh" class="bg-blue-600 hover:bg-blue-500 active:scale-95 transition px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1.5 shadow-sm text-white">
+        <button id="btn-refresh"
+          class="bg-blue-600 hover:bg-blue-500 active:scale-95 transition px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1.5 shadow-sm text-white">
           <i data-lucide="refresh-cw" class="w-4 h-4"></i>
           Aggiorna
         </button>
@@ -138,11 +150,12 @@
     <!-- Barra Filtri Principale -->
     <div id="filters-container" class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-3.5 sm:p-4 space-y-4">
       <div class="flex flex-wrap gap-3 sm:gap-4 items-center">
-        
+
         <!-- Cerca nel testo -->
         <div class="flex-1 min-w-[200px]">
           <label class="block text-xs font-medium text-slate-400 mb-1">Cerca nel testo</label>
-          <input type="text" id="filter-search" placeholder="Cerca veicolo, id, messaggio..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+          <input type="text" id="filter-search" placeholder="Cerca veicolo, id, messaggio..."
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
         </div>
 
         <!-- Calendario Flatpickr (solo vista Log) -->
@@ -152,13 +165,8 @@
             <button id="btn-clear-date" type="button" class="text-[10px] text-blue-400 hover:underline">Azzera</button>
           </div>
           <div class="relative flex items-center">
-            <input 
-              type="text" 
-              id="filter-calendar" 
-              placeholder="Seleziona data..." 
-              readonly
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs sm:text-sm text-slate-200 cursor-pointer focus:outline-none focus:border-blue-500"
-            >
+            <input type="text" id="filter-calendar" placeholder="Seleziona data..." readonly
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs sm:text-sm text-slate-200 cursor-pointer focus:outline-none focus:border-blue-500">
             <i data-lucide="calendar" class="w-4 h-4 text-slate-400 absolute left-2.5 pointer-events-none"></i>
           </div>
         </div>
@@ -166,7 +174,8 @@
         <!-- Filtro Modo Elaborazione (solo vista Log) -->
         <div id="container-mode" class="w-36">
           <label class="block text-xs font-medium text-slate-400 mb-1">Modo Elaborazione</label>
-          <select id="filter-mode" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+          <select id="filter-mode"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="ALL">Tutti</option>
             <option value="ENABLED">ENABLED</option>
             <option value="DISABLED">DISABLED</option>
@@ -177,7 +186,8 @@
         <!-- Filtro Canale (vista Veicoli e Piano Pubblicazioni) -->
         <div id="container-channel" class="w-36 hidden">
           <label class="block text-xs font-medium text-slate-400 mb-1">Filtro Canale</label>
-          <select id="filter-channel" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+          <select id="filter-channel"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="ALL">Tutti i canali</option>
             <option value="subito">Subito.it</option>
             <option value="autoscout">AutoScout24</option>
@@ -187,7 +197,8 @@
         <!-- Filtro Livello (solo vista Log) -->
         <div id="container-level" class="w-32">
           <label class="block text-xs font-medium text-slate-400 mb-1">Livello</label>
-          <select id="filter-level" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+          <select id="filter-level"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="ALL">Tutti</option>
             <option value="INFO">INFO</option>
             <option value="WARNING">WARNING</option>
@@ -197,7 +208,8 @@
 
         <div id="container-limit" class="w-24 sm:w-28">
           <label class="block text-xs font-medium text-slate-400 mb-1">Limite</label>
-          <select id="filter-limit" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+          <select id="filter-limit"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="50">50</option>
             <option value="100" selected>100</option>
             <option value="200">200</option>
@@ -210,54 +222,73 @@
       <!-- Filtri Stato / Tipo Evento con Checkbox (solo vista Log) -->
       <div id="container-events-filter" class="border-t border-slate-700/50 pt-3">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Filtra per Tipo Evento / Stato:</span>
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Filtra per Tipo Evento /
+            Stato:</span>
           <div class="flex gap-2">
             <button id="btn-check-all" type="button" class="text-[11px] text-blue-400 hover:underline">Tutti</button>
             <span class="text-slate-600 text-xs">|</span>
-            <button id="btn-uncheck-all" type="button" class="text-[11px] text-blue-400 hover:underline">Nessuno</button>
+            <button id="btn-uncheck-all" type="button"
+              class="text-[11px] text-blue-400 hover:underline">Nessuno</button>
             <span class="text-slate-600 text-xs">|</span>
-            <button id="btn-reset-default" type="button" class="text-[11px] text-amber-400 hover:underline">Ripristina Default</button>
+            <button id="btn-reset-default" type="button" class="text-[11px] text-amber-400 hover:underline">Ripristina
+              Default</button>
           </div>
         </div>
 
         <div class="flex flex-wrap gap-2 text-xs font-sans">
-          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-red-600/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
-            <input type="checkbox" value="EXPIRY_WARNING_1D"  class="status-checkbox rounded bg-slate-800 border-slate-600 text-red-500 focus:ring-0">
+          <label
+            class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-red-600/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="EXPIRY_WARNING_1D"
+              class="status-checkbox rounded bg-slate-800 border-slate-600 text-red-500 focus:ring-0">
             <span class="text-red-400 font-semibold">EXPIRY_WARNING_1D</span>
           </label>
 
-          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-amber-500/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
-            <input type="checkbox" value="EXPIRY_TRIGGER"  class="status-checkbox rounded bg-slate-800 border-slate-600 text-amber-500 focus:ring-0">
+          <label
+            class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-amber-500/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="EXPIRY_TRIGGER"
+              class="status-checkbox rounded bg-slate-800 border-slate-600 text-amber-500 focus:ring-0">
             <span class="text-amber-300">TERM ELAPSED</span>
           </label>
 
-          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-emerald-500/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
-            <input type="checkbox" value="STATE_UPDATE_SUCCESS" checked class="status-checkbox rounded bg-slate-800 border-slate-600 text-emerald-500 focus:ring-0">
+          <label
+            class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-emerald-500/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="STATE_UPDATE_SUCCESS" checked
+              class="status-checkbox rounded bg-slate-800 border-slate-600 text-emerald-500 focus:ring-0">
             <span class="text-emerald-400">STATE_UPDATE_SUCCESS</span>
           </label>
 
-          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
-            <input type="checkbox" value="SKIPPED_NO_ACTION" class="status-checkbox rounded bg-slate-800 border-slate-600 text-slate-400 focus:ring-0">
+          <label
+            class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="SKIPPED_NO_ACTION"
+              class="status-checkbox rounded bg-slate-800 border-slate-600 text-slate-400 focus:ring-0">
             <span class="text-slate-300">SKIPPED_NO_ACTION</span>
           </label>
 
-          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-purple-500/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
-            <input type="checkbox" value="REALIGNMENT_REQUIRED" class="status-checkbox rounded bg-slate-800 border-slate-600 text-purple-500 focus:ring-0">
+          <label
+            class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-purple-500/70 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="REALIGNMENT_REQUIRED"
+              class="status-checkbox rounded bg-slate-800 border-slate-600 text-purple-500 focus:ring-0">
             <span class="text-purple-300">REALIGNMENT_REQUIRED</span>
           </label>
 
-          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
-            <input type="checkbox" value="JOB_START" class="status-checkbox rounded bg-slate-800 border-slate-600 text-blue-500 focus:ring-0">
+          <label
+            class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="JOB_START"
+              class="status-checkbox rounded bg-slate-800 border-slate-600 text-blue-500 focus:ring-0">
             <span class="text-slate-300">JOB_START</span>
           </label>
 
-          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
-            <input type="checkbox" value="JOB_END" class="status-checkbox rounded bg-slate-800 border-slate-600 text-blue-500 focus:ring-0">
+          <label
+            class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="JOB_END"
+              class="status-checkbox rounded bg-slate-800 border-slate-600 text-blue-500 focus:ring-0">
             <span class="text-slate-300">JOB_END</span>
           </label>
 
-          <label class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
-            <input type="checkbox" value="OTHER" class="status-checkbox rounded bg-slate-800 border-slate-600 text-slate-500 focus:ring-0">
+          <label
+            class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg cursor-pointer transition select-none">
+            <input type="checkbox" value="OTHER"
+              class="status-checkbox rounded bg-slate-800 border-slate-600 text-slate-500 focus:ring-0">
             <span class="text-slate-400">Altri (SYSTEM/VEHICLE_LOG)</span>
           </label>
         </div>
@@ -268,7 +299,9 @@
     <div id="table-wrapper" class="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg">
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm border-collapse">
-          <thead id="table-thead" class="bg-slate-950 text-slate-400 uppercase text-[11px] font-semibold tracking-wider border-b border-slate-800"></thead>
+          <thead id="table-thead"
+            class="bg-slate-950 text-slate-400 uppercase text-[11px] font-semibold tracking-wider border-b border-slate-800">
+          </thead>
           <tbody id="table-tbody" class="divide-y divide-slate-800/60 font-mono text-xs">
             <tr>
               <td colspan="7" class="text-center py-8 text-slate-500">Caricamento in corso...</td>
@@ -280,9 +313,11 @@
 
     <!-- Contenitore Vista Piano Pubblicazioni -->
     <div id="schedule-wrapper" class="hidden space-y-4">
-      <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div
+        class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+          <div
+            class="w-10 h-10 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
             <i data-lucide="clock" class="w-5 h-5"></i>
           </div>
           <div>
@@ -290,22 +325,26 @@
             <p id="schedule-last-run-info" class="text-xs text-slate-400 font-mono mt-0.5">Calcolo in corso...</p>
           </div>
         </div>
-        <div class="flex items-center gap-2 text-xs text-slate-400 font-medium bg-slate-900/60 px-3 py-2 rounded-lg border border-slate-800">
+        <div
+          class="flex items-center gap-2 text-xs text-slate-400 font-medium bg-slate-900/60 px-3 py-2 rounded-lg border border-slate-800">
           <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
           Base dati: operazioni_veicoli (Spegnimento: Mar/Sab • Ripubblicazione: Mer/Dom)
         </div>
       </div>
 
-      <div id="schedule-days-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">
+      <div id="schedule-days-grid"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">
         <!-- Generato dinamicamente -->
       </div>
     </div>
 
     <!-- Contatore Record e Note di Piè di Pagina -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400 px-1 pt-1 border-t border-slate-800/60">
+    <div
+      class="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400 px-1 pt-1 border-t border-slate-800/60">
       <span id="records-counter">Record caricati: 0</span>
       <div class="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
-        <span id="hint-text" class="hidden sm:inline font-sans text-slate-400">Suggerimento: tocca le descrizioni per espanderle</span>
+        <span id="hint-text" class="hidden sm:inline font-sans text-slate-400">Suggerimento: tocca le descrizioni per
+          espanderle</span>
         <span class="hidden sm:inline text-slate-700">|</span>
         <span id="footer-version-tag">Dashboard Release: --</span>
       </div>
@@ -316,9 +355,8 @@
   <script>
     // Configurazione Versione incrementale basata su data e ora di rilascio
     const APP_CONFIG = {
-      // Formato standard incrementale: Anno.Mese.Giorno-OraMinuti
-      buildDate: "2026-10-07T15:06:32",
-      versionLabel: "v2026.10.07-1506"
+      buildDate: "2026-10-07T11:40:00",
+      versionLabel: "v2026.10.07-1140"
     };
 
     function initVersionInfo() {
@@ -340,7 +378,7 @@
         footerTagEl.innerText = `${APP_CONFIG.versionLabel} (${formattedBuild})`;
       }
     }
-    
+
     // Lettura delle chiavi da config.js (window.ENV) con fallback
     const env = window.ENV || window.CONFIG || {};
     const SUPABASE_URL = env.SUPABASE_URL;
@@ -370,7 +408,7 @@
       altInput: true,
       altFormat: "j F Y",
       allowInput: false,
-      onChange: function(selectedDates, dateStr) {
+      onChange: function (selectedDates, dateStr) {
         selectedCalendarDate = dateStr;
         applyFilters();
       }
@@ -395,7 +433,7 @@
     // Riconoscimento sessioni per evidenziare i log dell'ultima esecuzione
     function identifySessions(logs) {
       if (!logs || logs.length === 0) return [];
-      
+
       const sessions = [];
       const MAX_GAP_BETWEEN_LOGS_MS = 90 * 1000;
       const MAX_BATCH_SPAN_MS = 6 * 60 * 1000;
@@ -416,7 +454,7 @@
         } else {
           const gap = currentSession.startTime - rowTime;
           const totalSpan = currentSession.latestTime - rowTime;
-           
+
           if (gap > MAX_GAP_BETWEEN_LOGS_MS || totalSpan > MAX_BATCH_SPAN_MS) {
             if (currentSession.logs.length > 1) {
               sessions.push(currentSession);
@@ -615,7 +653,7 @@
       return `<span class="text-slate-500 text-[10px]">-</span>`;
     }
 
-    window.toggleExpandText = function(btn) {
+    window.toggleExpandText = function (btn) {
       const container = btn.closest('.expandable-cell');
       if (!container) return;
       const textEl = container.querySelector('.expandable-text');
@@ -730,7 +768,7 @@
           const itemDate = item.log_time ? item.log_time.substring(0, 10) : "";
           const matchesDate = !selectedCalendarDate || (itemDate === selectedCalendarDate);
 
-          const matchesSearch = !searchTerm || 
+          const matchesSearch = !searchTerm ||
             (item.message && item.message.toLowerCase().includes(searchTerm)) ||
             (item.vehicle_model && item.vehicle_model.toLowerCase().includes(searchTerm));
 
@@ -926,213 +964,213 @@
     }
 
     function renderScheduleView() {
-  const searchTerm = document.getElementById("filter-search").value.toLowerCase();
-  const filterChannel = document.getElementById("filter-channel").value;
-  const lastRunInfoEl = document.getElementById("schedule-last-run-info");
-  const gridContainer = document.getElementById("schedule-days-grid");
-  const counterEl = document.getElementById("records-counter");
+      const searchTerm = document.getElementById("filter-search").value.toLowerCase();
+      const filterChannel = document.getElementById("filter-channel").value;
+      const lastRunInfoEl = document.getElementById("schedule-last-run-info");
+      const gridContainer = document.getElementById("schedule-days-grid");
+      const counterEl = document.getElementById("records-counter");
 
-  if (vehiclesCache.length === 0) {
-    lastRunInfoEl.innerText = "Nessun veicolo caricato.";
-    gridContainer.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500">Nessun veicolo presente nella tabella operazioni_veicoli.</div>`;
-    return;
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  lastRunInfoEl.innerText = `Oggi: ${today.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })} | Elaborazioni: Martedì-Mercoledì e Sabato-Domenica`;
-
-  // Calcolo prossime finestre operative Mar-Mer e Sab-Dom
-  function getNextSlotWindow(targetDay1, targetDay2) {
-    // targetDay1: es. Martedì (2) o Sabato (6)
-    // targetDay2: es. Mercoledì (3) o Domenica (0)
-    let d1 = new Date(today);
-    while (d1.getDay() !== targetDay1) {
-      d1.setDate(d1.getDate() + 1);
-    }
-    let d2 = new Date(d1);
-    d2.setDate(d2.getDate() + 1); // Giorno successivo (Mer o Dom)
-    return { depublishDate: d1, republishDate: d2 };
-  }
-
-  const slotMidweek = getNextSlotWindow(2, 3); // Mar - Mer
-  const slotWeekend = getNextSlotWindow(6, 0); // Sab - Dom
-
-  // Ordina temporalmente quale dei due blocchi arriva prima rispetto a oggi
-  const isMidweekFirst = slotMidweek.depublishDate <= slotWeekend.depublishDate;
-  const firstSlot = isMidweekFirst ? slotMidweek : slotWeekend;
-  const secondSlot = isMidweekFirst ? slotWeekend : slotMidweek;
-
-  const firstSlotLabel = isMidweekFirst ? "Martedì - Mercoledì" : "Sabato - Domenica";
-  const secondSlotLabel = isMidweekFirst ? "Sabato - Domenica" : "Martedì - Mercoledì";
-
-  const firstSlotDatesStr = `${firstSlot.depublishDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })} - ${firstSlot.republishDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}`;
-  const secondSlotDatesStr = `${secondSlot.depublishDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })} - ${secondSlot.republishDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}`;
-
-  // 3 Colonne chiare focalizzate sulle sessioni di lavoro
-  const buckets = [
-    {
-      id: "next_slot_1",
-      title: `Prossima Elaborazione (${firstSlotLabel})`,
-      subTitle: firstSlotDatesStr,
-      isCurrent: true,
-      items: [],
-      matchDates: [firstSlot.depublishDate.getTime(), firstSlot.republishDate.getTime()]
-    },
-    {
-      id: "next_slot_2",
-      title: `Elaborazione Successiva (${secondSlotLabel})`,
-      subTitle: secondSlotDatesStr,
-      isCurrent: false,
-      items: [],
-      matchDates: [secondSlot.depublishDate.getTime(), secondSlot.republishDate.getTime()]
-    },
-    {
-      id: "later_slots",
-      title: "Cicli Futuri",
-      subTitle: "In Coda (Oltre i prossimi 2 cicli)",
-      isCurrent: false,
-      items: []
-    }
-  ];
-
-  let totalFound = 0;
-
-  vehiclesCache.forEach(vehicle => {
-    const desc = vehicle.descrizione || `ID #${vehicle.id}`;
-    const descLower = desc.toLowerCase();
-    const idStr = String(vehicle.id || "");
-
-    if (searchTerm && !descLower.includes(searchTerm) && !idStr.includes(searchTerm)) {
-      return;
-    }
-
-    const switchDays = parseVehicleSwitchday(vehicle.switchday);
-    if (switchDays === null) return;
-
-    const channelsToCheck = [];
-    const flag = (vehicle.flag || "").toLowerCase();
-
-    if (filterChannel === "ALL" || filterChannel === "subito") {
-      if ((vehicle.status_subito !== undefined && vehicle.status_subito !== null) || flag.includes("subito") || vehicle.data_p_subito) {
-        channelsToCheck.push("subito");
-      }
-    }
-    if (filterChannel === "ALL" || filterChannel === "autoscout") {
-      if ((vehicle.status_autoscout !== undefined && vehicle.status_autoscout !== null) || flag.includes("autoscout") || vehicle.data_p_autoscout) {
-        channelsToCheck.push("autoscout");
-      }
-    }
-
-    if (channelsToCheck.length === 0 && filterChannel === "ALL") {
-      channelsToCheck.push("generico");
-    }
-
-    channelsToCheck.forEach(channel => {
-      let pubDateRaw = null;
-      let currentStatus = 1;
-
-      if (channel === "subito") {
-        pubDateRaw = vehicle.data_p_subito;
-        currentStatus = vehicle.status_subito ?? 1;
-      } else if (channel === "autoscout") {
-        pubDateRaw = vehicle.data_p_autoscout;
-        currentStatus = vehicle.status_autoscout ?? 1;
-      }
-      pubDateRaw = pubDateRaw || vehicle.data_pubblicazione;
-
-      const baseDate = parseVehicleDate(pubDateRaw) || parseVehicleDate(vehicle.data_acquisizione);
-      if (!baseDate) return;
-
-      const isFallbackAcquisition = !pubDateRaw && Boolean(vehicle.data_acquisizione);
-
-      // Calcolo scadenza naturale
-      const naturalExpiryDate = new Date(baseDate);
-      naturalExpiryDate.setDate(naturalExpiryDate.getDate() + switchDays);
-      naturalExpiryDate.setHours(0, 0, 0, 0);
-
-      let actionDate;
-      let actionType = "";
-
-      if (currentStatus === 1) {
-        // ATTIVO: Richiede Spegnimento (Martedì o Sabato)
-        actionType = "DEPUBBLICAZIONE";
-        const referenceForAction = naturalExpiryDate > today ? naturalExpiryDate : today;
-        actionDate = getNextDepublishDate(referenceForAction);
-      } else {
-        // SPENTO: Richiede Riaccensione (Mercoledì o Domenica)
-        actionType = "RIPUBBLICAZIONE";
-        actionDate = getNextRepublishDate(today);
+      if (vehiclesCache.length === 0) {
+        lastRunInfoEl.innerText = "Nessun veicolo caricato.";
+        gridContainer.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500">Nessun veicolo presente nella tabella operazioni_veicoli.</div>`;
+        return;
       }
 
-      totalFound++;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-      const itemData = {
-        vehicleId: vehicle.id,
-        vehicle: desc,
-        channel: channel,
-        currentStatus: currentStatus,
-        actionType: actionType,
-        switchday: switchDays,
-        baseDate: baseDate,
-        naturalExpiryDate: naturalExpiryDate,
-        actionDate: actionDate,
-        isFallbackAcquisition: isFallbackAcquisition
-      };
+      lastRunInfoEl.innerText = `Oggi: ${today.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })} | Elaborazioni: Martedì-Mercoledì e Sabato-Domenica`;
 
-      const actionDateTime = actionDate.getTime();
-
-      // Inserimento nel bucket corretto di elaborazione
-      if (buckets[0].matchDates.includes(actionDateTime)) {
-        buckets[0].items.push(itemData);
-      } else if (buckets[1].matchDates.includes(actionDateTime)) {
-        buckets[1].items.push(itemData);
-      } else {
-        buckets[2].items.push(itemData);
+      // Calcolo prossime finestre operative Mar-Mer e Sab-Dom
+      function getNextSlotWindow(targetDay1, targetDay2) {
+        // targetDay1: es. Martedì (2) o Sabato (6)
+        // targetDay2: es. Mercoledì (3) o Domenica (0)
+        let d1 = new Date(today);
+        while (d1.getDay() !== targetDay1) {
+          d1.setDate(d1.getDate() + 1);
+        }
+        let d2 = new Date(d1);
+        d2.setDate(d2.getDate() + 1); // Giorno successivo (Mer o Dom)
+        return { depublishDate: d1, republishDate: d2 };
       }
-    });
-  });
 
-  if (counterEl) counterEl.innerText = `Pubblicazioni analizzate: ${totalFound}`;
+      const slotMidweek = getNextSlotWindow(2, 3); // Mar - Mer
+      const slotWeekend = getNextSlotWindow(6, 0); // Sab - Dom
 
-  // Rendering delle colonne
-  gridContainer.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4";
-  gridContainer.innerHTML = buckets.map(bucket => {
-    let colBorder = "border-slate-800 bg-slate-900/60";
-    let headerColor = "text-slate-300";
-    let badgeHeader = "bg-slate-800 text-slate-400";
+      // Ordina temporalmente quale dei due blocchi arriva prima rispetto a oggi
+      const isMidweekFirst = slotMidweek.depublishDate <= slotWeekend.depublishDate;
+      const firstSlot = isMidweekFirst ? slotMidweek : slotWeekend;
+      const secondSlot = isMidweekFirst ? slotWeekend : slotMidweek;
 
-    if (bucket.isCurrent) {
-      colBorder = "border-blue-500/40 bg-blue-950/15";
-      headerColor = "text-blue-400 font-bold";
-      badgeHeader = "bg-blue-500/20 text-blue-300 border border-blue-500/30";
-    }
+      const firstSlotLabel = isMidweekFirst ? "Martedì - Mercoledì" : "Sabato - Domenica";
+      const secondSlotLabel = isMidweekFirst ? "Sabato - Domenica" : "Martedì - Mercoledì";
 
-    const itemsHtml = bucket.items.length === 0 
-      ? `<div class="p-6 text-center text-xs text-slate-500 italic">Nessun veicolo programmato</div>`
-      : bucket.items.map(item => {
-          let iconImg = "";
-          if (item.channel === "subito") {
-            iconImg = `<img src="SubitoICO.png" alt="Subito" title="Subito" class="w-4 h-4 rounded-full object-contain shrink-0 shadow-sm" />`;
-          } else if (item.channel === "autoscout") {
-            iconImg = `<img src="AS24Ico.png" alt="AutoScout24" title="AutoScout24" class="w-4 h-4 rounded-full object-contain shrink-0 shadow-sm" />`;
+      const firstSlotDatesStr = `${firstSlot.depublishDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })} - ${firstSlot.republishDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}`;
+      const secondSlotDatesStr = `${secondSlot.depublishDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })} - ${secondSlot.republishDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}`;
+
+      // 3 Colonne chiare focalizzate sulle sessioni di lavoro
+      const buckets = [
+        {
+          id: "next_slot_1",
+          title: `Prossima Elaborazione (${firstSlotLabel})`,
+          subTitle: firstSlotDatesStr,
+          isCurrent: true,
+          items: [],
+          matchDates: [firstSlot.depublishDate.getTime(), firstSlot.republishDate.getTime()]
+        },
+        {
+          id: "next_slot_2",
+          title: `Elaborazione Successiva (${secondSlotLabel})`,
+          subTitle: secondSlotDatesStr,
+          isCurrent: false,
+          items: [],
+          matchDates: [secondSlot.depublishDate.getTime(), secondSlot.republishDate.getTime()]
+        },
+        {
+          id: "later_slots",
+          title: "Cicli Futuri",
+          subTitle: "In Coda (Oltre i prossimi 2 cicli)",
+          isCurrent: false,
+          items: []
+        }
+      ];
+
+      let totalFound = 0;
+
+      vehiclesCache.forEach(vehicle => {
+        const desc = vehicle.descrizione || `ID #${vehicle.id}`;
+        const descLower = desc.toLowerCase();
+        const idStr = String(vehicle.id || "");
+
+        if (searchTerm && !descLower.includes(searchTerm) && !idStr.includes(searchTerm)) {
+          return;
+        }
+
+        const switchDays = parseVehicleSwitchday(vehicle.switchday);
+        if (switchDays === null) return;
+
+        const channelsToCheck = [];
+        const flag = (vehicle.flag || "").toLowerCase();
+
+        if (filterChannel === "ALL" || filterChannel === "subito") {
+          if ((vehicle.status_subito !== undefined && vehicle.status_subito !== null) || flag.includes("subito") || vehicle.data_p_subito) {
+            channelsToCheck.push("subito");
+          }
+        }
+        if (filterChannel === "ALL" || filterChannel === "autoscout") {
+          if ((vehicle.status_autoscout !== undefined && vehicle.status_autoscout !== null) || flag.includes("autoscout") || vehicle.data_p_autoscout) {
+            channelsToCheck.push("autoscout");
+          }
+        }
+
+        if (channelsToCheck.length === 0 && filterChannel === "ALL") {
+          channelsToCheck.push("generico");
+        }
+
+        channelsToCheck.forEach(channel => {
+          let pubDateRaw = null;
+          let currentStatus = 1;
+
+          if (channel === "subito") {
+            pubDateRaw = vehicle.data_p_subito;
+            currentStatus = vehicle.status_subito ?? 1;
+          } else if (channel === "autoscout") {
+            pubDateRaw = vehicle.data_p_autoscout;
+            currentStatus = vehicle.status_autoscout ?? 1;
+          }
+          pubDateRaw = pubDateRaw || vehicle.data_pubblicazione;
+
+          const baseDate = parseVehicleDate(pubDateRaw) || parseVehicleDate(vehicle.data_acquisizione);
+          if (!baseDate) return;
+
+          const isFallbackAcquisition = !pubDateRaw && Boolean(vehicle.data_acquisizione);
+
+          // Calcolo scadenza naturale
+          const naturalExpiryDate = new Date(baseDate);
+          naturalExpiryDate.setDate(naturalExpiryDate.getDate() + switchDays);
+          naturalExpiryDate.setHours(0, 0, 0, 0);
+
+          let actionDate;
+          let actionType = "";
+
+          if (currentStatus === 1) {
+            // ATTIVO: Richiede Spegnimento (Martedì o Sabato)
+            actionType = "DEPUBBLICAZIONE";
+            const referenceForAction = naturalExpiryDate > today ? naturalExpiryDate : today;
+            actionDate = getNextDepublishDate(referenceForAction);
           } else {
-            iconImg = `<i data-lucide="share-2" class="w-3.5 h-3.5 text-slate-500 shrink-0"></i>`;
+            // SPENTO: Richiede Riaccensione (Mercoledì o Domenica)
+            actionType = "RIPUBBLICAZIONE";
+            actionDate = getNextRepublishDate(today);
           }
 
-          const statusBadge = item.currentStatus === 1
-            ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Attivo</span>`
-            : `<span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30">Spento</span>`;
+          totalFound++;
 
-          const actionBadge = item.actionType === "DEPUBBLICAZIONE"
-            ? `<span class="text-rose-400 font-semibold uppercase tracking-wider">Depubblica (${item.actionDate.toLocaleDateString('it-IT', { weekday: 'short' })})</span>`
-            : `<span class="text-emerald-400 font-semibold uppercase tracking-wider">Ripubblica (${item.actionDate.toLocaleDateString('it-IT', { weekday: 'short' })})</span>`;
+          const itemData = {
+            vehicleId: vehicle.id,
+            vehicle: desc,
+            channel: channel,
+            currentStatus: currentStatus,
+            actionType: actionType,
+            switchday: switchDays,
+            baseDate: baseDate,
+            naturalExpiryDate: naturalExpiryDate,
+            actionDate: actionDate,
+            isFallbackAcquisition: isFallbackAcquisition
+          };
 
-          const baseLabel = item.isFallbackAcquisition ? "Data Acquisiz." : "Data Pubbl.";
-          const actionDayStr = item.actionDate.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: '2-digit' });
+          const actionDateTime = actionDate.getTime();
 
-          return `
+          // Inserimento nel bucket corretto di elaborazione
+          if (buckets[0].matchDates.includes(actionDateTime)) {
+            buckets[0].items.push(itemData);
+          } else if (buckets[1].matchDates.includes(actionDateTime)) {
+            buckets[1].items.push(itemData);
+          } else {
+            buckets[2].items.push(itemData);
+          }
+        });
+      });
+
+      if (counterEl) counterEl.innerText = `Pubblicazioni analizzate: ${totalFound}`;
+
+      // Rendering delle colonne
+      gridContainer.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4";
+      gridContainer.innerHTML = buckets.map(bucket => {
+        let colBorder = "border-slate-800 bg-slate-900/60";
+        let headerColor = "text-slate-300";
+        let badgeHeader = "bg-slate-800 text-slate-400";
+
+        if (bucket.isCurrent) {
+          colBorder = "border-blue-500/40 bg-blue-950/15";
+          headerColor = "text-blue-400 font-bold";
+          badgeHeader = "bg-blue-500/20 text-blue-300 border border-blue-500/30";
+        }
+
+        const itemsHtml = bucket.items.length === 0
+          ? `<div class="p-6 text-center text-xs text-slate-500 italic">Nessun veicolo programmato</div>`
+          : bucket.items.map(item => {
+            let iconImg = "";
+            if (item.channel === "subito") {
+              iconImg = `<img src="SubitoICO.png" alt="Subito" title="Subito" class="w-4 h-4 rounded-full object-contain shrink-0 shadow-sm" />`;
+            } else if (item.channel === "autoscout") {
+              iconImg = `<img src="AS24Ico.png" alt="AutoScout24" title="AutoScout24" class="w-4 h-4 rounded-full object-contain shrink-0 shadow-sm" />`;
+            } else {
+              iconImg = `<i data-lucide="share-2" class="w-3.5 h-3.5 text-slate-500 shrink-0"></i>`;
+            }
+
+            const statusBadge = item.currentStatus === 1
+              ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Attivo</span>`
+              : `<span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30">Spento</span>`;
+
+            const actionBadge = item.actionType === "DEPUBBLICAZIONE"
+              ? `<span class="text-rose-400 font-semibold uppercase tracking-wider">Depubblica (${item.actionDate.toLocaleDateString('it-IT', { weekday: 'short' })})</span>`
+              : `<span class="text-emerald-400 font-semibold uppercase tracking-wider">Ripubblica (${item.actionDate.toLocaleDateString('it-IT', { weekday: 'short' })})</span>`;
+
+            const baseLabel = item.isFallbackAcquisition ? "Data Acquisiz." : "Data Pubbl.";
+            const actionDayStr = item.actionDate.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: '2-digit' });
+
+            return `
             <div class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/70 hover:border-slate-600 rounded-lg p-2.5 transition flex flex-col gap-1.5 shadow-sm">
               <div class="flex items-center justify-between gap-1.5">
                 <div class="flex items-center gap-1.5 min-w-0">
@@ -1158,9 +1196,9 @@
               </div>
             </div>
           `;
-        }).join("");
+          }).join("");
 
-    return `
+        return `
       <div class="rounded-xl border ${colBorder} flex flex-col overflow-hidden">
         <div class="px-3.5 py-3 border-b border-slate-800 flex items-center justify-between">
           <div>
@@ -1176,10 +1214,10 @@
         </div>
       </div>
     `;
-  }).join("");
+      }).join("");
 
-  lucide.createIcons();
-}
+      lucide.createIcons();
+    }
 
     // Event Listeners Navigazione
     document.getElementById("btn-view-logs").addEventListener("click", () => setView("logs"));
@@ -1227,4 +1265,5 @@
     fetchData();
   </script>
 </body>
+
 </html>
