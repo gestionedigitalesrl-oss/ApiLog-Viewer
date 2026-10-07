@@ -316,9 +316,8 @@
   <script>
     // Configurazione Versione incrementale basata su data e ora di rilascio
     const APP_CONFIG = {
-      // Formato standard incrementale: Anno.Mese.Giorno-OraMinuti
-      buildDate: "2026-10-05T17:52:21",
-      versionLabel: "v2026.10.05-1752"
+      buildDate: "2026-10-07T11:40:00",
+      versionLabel: "v2026.10.07-1140"
     };
 
     function initVersionInfo() {
@@ -361,6 +360,7 @@
     let currentView = "logs"; // "logs", "vehicles" o "schedule"
     let logsCache = [];
     let vehiclesCache = [];
+    let detectedSessions = []; // Elenco sessioni raggruppate per l'evidenziazione nei log
     let selectedCalendarDate = "";
 
     const calendarPicker = flatpickr("#filter-calendar", {
@@ -374,6 +374,76 @@
         applyFilters();
       }
     });
+
+    function detectChannel(rowOrText) {
+      let str = "";
+      if (typeof rowOrText === "string") {
+        str = rowOrText.toLowerCase();
+      } else if (rowOrText && typeof rowOrText === "object") {
+        const msg = rowOrText.message || "";
+        const flag = rowOrText.flag || "";
+        const meta = rowOrText.raw_metadata ? JSON.stringify(rowOrText.raw_metadata) : "";
+        str = `${msg} ${flag} ${meta}`.toLowerCase();
+      }
+
+      if (str.includes("subito")) return "subito";
+      if (str.includes("autoscout") || str.includes("as24") || str.includes("auto scout")) return "autoscout";
+      return "generico";
+    }
+
+    // Riconoscimento sessioni per evidenziare i log dell'ultima esecuzione
+    function identifySessions(logs) {
+      if (!logs || logs.length === 0) return [];
+      
+      const sessions = [];
+      const MAX_GAP_BETWEEN_LOGS_MS = 90 * 1000;
+      const MAX_BATCH_SPAN_MS = 6 * 60 * 1000;
+
+      let currentSession = null;
+
+      for (let i = 0; i < logs.length; i++) {
+        const row = logs[i];
+        const rowTime = new Date(row.log_time).getTime();
+
+        if (!currentSession) {
+          currentSession = {
+            startTime: rowTime,
+            latestTime: rowTime,
+            latestLog: row,
+            logs: [row]
+          };
+        } else {
+          const gap = currentSession.startTime - rowTime;
+          const totalSpan = currentSession.latestTime - rowTime;
+           
+          if (gap > MAX_GAP_BETWEEN_LOGS_MS || totalSpan > MAX_BATCH_SPAN_MS) {
+            if (currentSession.logs.length > 1) {
+              sessions.push(currentSession);
+            }
+            currentSession = {
+              startTime: rowTime,
+              latestTime: rowTime,
+              latestLog: row,
+              logs: [row]
+            };
+          } else {
+            currentSession.logs.push(row);
+            currentSession.startTime = rowTime;
+
+            if (row.event_type === "JOB_START") {
+              sessions.push(currentSession);
+              currentSession = null;
+            }
+          }
+        }
+      }
+
+      if (currentSession && currentSession.logs.length > 1) {
+        sessions.push(currentSession);
+      }
+
+      return sessions;
+    }
 
     function setView(view) {
       currentView = view;
@@ -411,7 +481,7 @@
         containerChannel.classList.add("hidden");
         containerEvents.classList.remove("hidden");
         containerLimit.classList.remove("hidden");
-        hintText.innerText = "Suggerimento: tocca le descrizioni per espanderle";
+        hintText.innerText = "I record con bordo viola/indaco appartengono all'ultima sessione";
         applyFilters();
       } else if (view === "vehicles") {
         btnVehicles.className = activeClass;
@@ -454,6 +524,15 @@
       return Boolean(/\btrigger\s+tra\s+1\s*(gg|giorno|day)\b/i.test(msg));
     }
 
+    function isTestRecord(row) {
+      if (row.execution_mode === "TEST") return true;
+      const msg = (row.message || "").toLowerCase();
+      const model = (row.vehicle_model || "").toLowerCase();
+      const metaStr = row.raw_metadata ? JSON.stringify(row.raw_metadata).toLowerCase() : "";
+      const testRegex = /\b(test|dry-run|dryrun|simulazione|mock)\b/i;
+      return testRegex.test(msg) || testRegex.test(model) || testRegex.test(metaStr);
+    }
+
     function formatDate(rawStr) {
       if (!rawStr) return "-";
       const clean = rawStr.replace("T", " ").split("+")[0].split(".")[0];
@@ -490,18 +569,37 @@
       return `<span class="px-2 py-0.5 rounded border text-[10px] font-bold ${colors[level] || "bg-slate-800 text-slate-300 border-slate-700"}">${level}</span>`;
     }
 
-    function renderBadgeEvent(evt, isWarning1D) {
+    function renderBadgeEvent(evt, isWarning1D, message = "") {
+      let badgeHtml = "";
       if (isWarning1D || evt === "EXPIRY_WARNING_1D") {
-        return `<span class="px-2 py-0.5 rounded border text-[10px] font-medium font-sans bg-red-950/60 text-red-400 border-red-800/80">EXPIRY_WARNING_1D</span>`;
+        badgeHtml = `<span class="px-2 py-0.5 rounded border text-[10px] font-medium font-sans bg-red-950/60 text-red-400 border-red-800/80">EXPIRY_WARNING_1D</span>`;
       } else if (evt === "EXPIRY_TRIGGER") {
-        return `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans bg-amber-500/10 text-amber-300 border-amber-500/20">TERM ELAPSED</span>`;
+        badgeHtml = `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans bg-amber-500/10 text-amber-300 border-amber-500/20">TERM ELAPSED</span>`;
+      } else {
+        const colors = {
+          STATE_UPDATE_SUCCESS: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+          SKIPPED_NO_ACTION: "bg-slate-700/30 text-slate-400 border-slate-600/30",
+          REALIGNMENT_REQUIRED: "bg-purple-500/10 text-purple-300 border-purple-500/20"
+        };
+        const c = colors[evt] || "bg-slate-800 text-slate-400 border-slate-700";
+        badgeHtml = `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans ${c}">${evt}</span>`;
       }
-      const colors = {
-        STATE_UPDATE_SUCCESS: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
-        SKIPPED_NO_ACTION: "bg-slate-700/30 text-slate-400 border-slate-600/30",
-        REALIGNMENT_REQUIRED: "bg-purple-500/10 text-purple-300 border-purple-500/20"
-      };
-      return `<span class="px-2 py-0.5 rounded-full border text-[10px] font-sans ${colors[evt] || "bg-slate-800 text-slate-400 border-slate-700"}">${evt}</span>`;
+
+      const ch = detectChannel(message);
+      let iconHtml = "";
+
+      if (ch === "subito") {
+        iconHtml = `<img src="SubitoICO.png" alt="Subito" title="Subito" class="w-4 h-4 rounded-full object-contain shrink-0 shadow-sm" />`;
+      } else if (ch === "autoscout") {
+        iconHtml = `<img src="AS24Ico.png" alt="AutoScout24" title="AutoScout24" class="w-4 h-4 rounded-full object-contain shrink-0 shadow-sm" />`;
+      }
+
+      return `
+        <div class="inline-flex items-center gap-1.5">
+          ${iconHtml}
+          ${badgeHtml}
+        </div>
+      `;
     }
 
     function renderStatusPill(statusVal) {
@@ -548,9 +646,10 @@
 
           if (error) throw error;
           logsCache = data || [];
+          detectedSessions = identifySessions(logsCache);
           applyFilters();
         } else {
-          // Utilizzato sia per Vista Veicoli che per Piano Pubblicazioni
+          // Utilizzato per Vista Veicoli e Piano Pubblicazioni
           const { data, error } = await supabaseClient
             .from("operazioni_veicoli")
             .select("*")
@@ -589,7 +688,7 @@
         document.getElementById("stat-label-1").innerText = "Totale Flotta Veicoli";
         document.getElementById("stat-val-1").innerText = vehiclesCache.length;
         document.getElementById("stat-label-2").innerText = "Subito Attivi";
-        document.getElementById("stat-val-2").innerText = vehiclesCache.filter(v => v.status_subito === 1).length;
+        document.getElementById("stat-label-2").innerText = vehiclesCache.filter(v => v.status_subito === 1).length;
         document.getElementById("stat-label-3").innerText = "AutoScout Attivi";
         document.getElementById("stat-val-3").innerText = vehiclesCache.filter(v => v.status_autoscout === 1).length;
         document.getElementById("stat-label-4").innerText = "Disattivati (Subito/AS)";
@@ -674,21 +773,37 @@
         return;
       }
 
+      // Ricava gli ID (o timestamp) dei record appartenenti all'ultima elaborazione rilevata
+      const latestSessionLogs = (detectedSessions && detectedSessions.length > 0)
+        ? new Set(detectedSessions[0].logs.map(l => l.id || l.log_time))
+        : new Set();
+
       tbody.innerHTML = logs.map(row => {
         const isWarning1D = isOneDayRecord(row);
+        const isTest = isTestRecord(row);
+        const isLatestBatch = latestSessionLogs.has(row.id || row.log_time);
+
         const vehicle = row.vehicle_model ?
           `<span class="text-slate-200 font-semibold">${row.vehicle_model}</span> ${row.vehicle_id ? `<span class="text-slate-500">#${row.vehicle_id}</span>` : ""}` :
           `<span class="text-slate-600">-</span>`;
+
+        let rowClass = "hover:bg-slate-800/40 transition";
+        if (isLatestBatch) {
+          // Evidenziazione visiva dell'ultima sessione
+          rowClass = "bg-indigo-900/40 border-l-2 border-l-indigo-400/70 hover:bg-indigo-900/60 transition";
+        } else if (isTest) {
+          rowClass = "bg-sky-950/20 border-l-2 border-l-sky-500/40 hover:bg-sky-900/30 transition";
+        }
 
         const msg = row.message || "-";
         const isLongMsg = msg.length > 75;
 
         return `
-          <tr class="hover:bg-slate-800/40 transition">
+          <tr class="${rowClass}">
             <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap text-white font-mono text-[11px] sm:text-xs">${formatDate(row.log_time)}</td>
             <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeMode(row.execution_mode)}</td>
             <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeLevel(row.level)}</td>
-            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeEvent(row.event_type, isWarning1D)}</td>
+            <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap">${renderBadgeEvent(row.event_type, isWarning1D, row.message)}</td>
             <td class="py-2.5 px-3 sm:px-4 whitespace-nowrap font-sans text-xs">${vehicle}</td>
             <td class="py-2 px-3 sm:px-4 min-w-[200px] max-w-[280px] sm:max-w-md">
               <div class="expandable-cell text-slate-300 font-sans text-xs">
@@ -890,7 +1005,7 @@
           }
           pubDateRaw = pubDateRaw || vehicle.data_pubblicazione;
 
-          // Se manca la data pubblicazione, fallback su data_acquisizione
+          // Se manca data pubblicazione, fallback su data_acquisizione
           const baseDate = parseVehicleDate(pubDateRaw) || parseVehicleDate(vehicle.data_acquisizione);
           if (!baseDate) return;
 
